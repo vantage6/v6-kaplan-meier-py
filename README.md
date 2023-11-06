@@ -6,4 +6,4 @@ Distributed Kaplan Meier with Homomorphic Encryption in Vantage6.
 
 
 Contributors: 
-Benedetta Gottardelli, Leonardo Nucciarelli, 
+Benedetta Gottardelli (benedetta.gottardelli@unicatt.it), Leonardo Nucciarelli (leonardo.nucciarelli01@icatt.it),  
