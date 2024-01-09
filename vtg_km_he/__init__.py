@@ -58,12 +58,15 @@ def calculate_KM(client, ids, time_col):
 
 
 
-def RPC_get_unique_event_times(data, time_col, data_set, filt, median_lp):
+def RPC_get_unique_event_times(
+        data, time_col, data_set=None, filt=None, median_lp=None
+):
     """Get Unique Event Times
     """
-    df = data_selector(data, data_set,filt, median_lp) #data_set, filt=None, median_lp=None)
+    # df = data_selector(data, data_set,filt, median_lp) #data_set, filt=None, median_lp=None)
     return {
-        "unique_event_times": df[time_col].unique()}
+        "unique_event_times": data[time_col].unique()
+    }
 
 
 def RPC_get_km_event_table(data, time_col, unique_event_times):
