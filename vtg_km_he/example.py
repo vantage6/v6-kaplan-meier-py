@@ -42,8 +42,12 @@ average_task = client.create_new_task(
     input_={
         'master': 1,
         'method': 'master',
-        'kwargs': {'time_col': 'T','censor_col':'C'}#,'data_set': 'all' }
-#'coef':[{'0': 0.1, '1': 0.2, '2': -0.1}]
+        'kwargs': {
+            'time_col': 'T',
+            'censor_col': 'C',
+            'method': 'binning',
+            'bins': {'maxtime': 92, 'size': 5}
+        }
     },
     organization_ids=[org_ids[0]]
 )

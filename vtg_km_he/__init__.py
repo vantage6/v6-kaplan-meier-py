@@ -1,12 +1,13 @@
 import time
-from vantage6.tools.util import info
-from itertools import product
-import pandas as pd
 import numpy as np
-import math
+import pandas as pd
+from vantage6.tools.util import info
 
 
-def master(client, data, time_col, censor_col, organization_ids=None):
+def master(
+        client, data, time_col, censor_col, method='km', bins=None,
+        organization_ids=None
+):
     """This package does the following:
             2. Calculates the coordinates of the Kaplan Meier curve
     """
@@ -18,32 +19,48 @@ def master(client, data, time_col, censor_col, organization_ids=None):
     else:
         ids = organization_ids
 
-    info(f'sending task to organizations {ids}')
+    info(f'Sending task to organizations {ids}')
+    km, local_event_tables = calculate_KM(
+        client, ids, time_col, censor_col, method, bins
+    )
 
- 
-    km,local_event_tables = calculate_KM(client, ids, time_col, censor_col)
     return {'kaplanMeier': km, 'local_event_tables': local_event_tables}
 
 
-def calculate_KM(client, ids, time_col, censor_col):
+def calculate_KM(client, ids, time_col, censor_col, method, bins):
 
-    kwargs_dict = {'time_col': time_col}  
-    method = 'get_unique_event_times'
-    results = subtaskLauncher(client, [method, kwargs_dict, ids])
+    if method == 'km':
+        # Get local unique time events
+        kwargs_dict = {'time_col': time_col}
+        method = 'get_unique_event_times'
+        results = subtaskLauncher(client, [method, kwargs_dict, ids])
 
-    local_uet = []
-    for output in results:
-        local_uet.append(output['unique_event_times'])
-
-    local_uet.append([0])
-    unique_event_times = list(set([item for sublist in local_uet for item in sublist]))
+        # Combine local unique times into global times
+        local_uet = []
+        for output in results:
+            local_uet.append(output['unique_event_times'])
+        local_uet.append([0])
+        unique_event_times = list(
+            set([item for sublist in local_uet for item in sublist])
+        )
+    elif method == 'binning':
+        try:
+            # Define bins for time events
+            unique_event_times = list(
+                range(0, bins['maxtime']+bins['size'], bins['size'])
+            )
+        except Exception as e:
+            info(f'Exception occurred with input \'bins\': {e}')
+    else:
+        info(f'Unknown method: {method}')
 
     ##### 2) Ask to calculate local event tables #####
 
     kwargs_dict = {
         'time_col': time_col,
         'censor_col': censor_col,
-        'unique_event_times': unique_event_times
+        'unique_event_times': unique_event_times,
+        'method': method
     }
     method = 'get_km_event_table'
     results = subtaskLauncher(client, [method, kwargs_dict, ids])
@@ -73,9 +90,17 @@ def RPC_get_unique_event_times(
     }
 
 
-def RPC_get_km_event_table(data, time_col, unique_event_times, censor_col):
+def RPC_get_km_event_table(
+        data, time_col, unique_event_times, censor_col, method
+):
     df = data.copy()
-    
+
+    if method == 'binning':
+        # Bin event time data
+        df[time_col] = np.float16(pd.cut(
+            df[time_col], bins=unique_event_times, labels=unique_event_times[1:]
+        ))
+
     info(str(len(df)))
     death = df.groupby(time_col, as_index=False).sum().rename(columns={censor_col: 'Deaths'})[[time_col, 'Deaths']]
     death = pd.DataFrame(unique_event_times, columns=[time_col]).merge(death, on=time_col, how='left').fillna(0)
