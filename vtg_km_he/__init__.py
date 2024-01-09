@@ -21,11 +21,11 @@ def master(client, data, time_col, censor_col, organization_ids=None):
     info(f'sending task to organizations {ids}')
 
  
-    km,local_event_tables = calculate_KM(client, ids, time_col)
+    km,local_event_tables = calculate_KM(client, ids, time_col, censor_col)
     return {'kaplanMeier': km, 'local_event_tables': local_event_tables}
 
 
-def calculate_KM(client, ids, time_col):
+def calculate_KM(client, ids, time_col, censor_col):
 
     kwargs_dict = {'time_col': time_col}  
     method = 'get_unique_event_times'
@@ -40,7 +40,11 @@ def calculate_KM(client, ids, time_col):
 
     ##### 2) Ask to calculate local event tables #####
 
-    kwargs_dict = {'time_col': time_col, 'unique_event_times': unique_event_times}  
+    kwargs_dict = {
+        'time_col': time_col,
+        'censor_col': censor_col,
+        'unique_event_times': unique_event_times
+    }
     method = 'get_km_event_table'
     results = subtaskLauncher(client, [method, kwargs_dict, ids])
 
@@ -69,14 +73,14 @@ def RPC_get_unique_event_times(
     }
 
 
-def RPC_get_km_event_table(data, time_col, unique_event_times):
+def RPC_get_km_event_table(data, time_col, unique_event_times, censor_col):
     df = data.copy()
     
     info(str(len(df)))
-    death = df.groupby(time_col, as_index=False).sum().rename(columns={'C': 'Deaths'})[[time_col, 'Deaths']]
+    death = df.groupby(time_col, as_index=False).sum().rename(columns={censor_col: 'Deaths'})[[time_col, 'Deaths']]
     death = pd.DataFrame(unique_event_times, columns=[time_col]).merge(death, on=time_col, how='left').fillna(0)
 
-    total = df.groupby(time_col, as_index=False).count().rename(columns={'C': 'Total'})[[time_col, 'Total']]
+    total = df.groupby(time_col, as_index=False).count().rename(columns={censor_col: 'Total'})[[time_col, 'Total']]
     total = pd.DataFrame(unique_event_times, columns=[time_col]).merge(total, on=time_col, how='left').fillna(0)
 
     km = death.merge(total, on=time_col)
