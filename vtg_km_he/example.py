@@ -10,9 +10,9 @@ warnings.filterwarnings("ignore")
 # package. This is the name you specified in `setup.py`, in our case that
 # would be v6-correlation-matrix-py.
 client = ClientMockProtocol(
-    datasets=["./local/data_test.csv", "./local/data_test.csv"],
+    datasets=["vtg_km_he/local/data_test.csv", "vtg_km_he/local/data_test.csv"],
 #    datasets=["./local/TR_Maastricht_data (1).csv", "./local/TR_Maastricht_data (1).csv"],
-    module="vtg_km"
+    module="vtg_km_he"#"vtg_km"
 )
 
 
@@ -28,7 +28,7 @@ average_task = client.create_new_task(
     input_={
         'master': 1,
         'method': 'master',
-        'kwargs': {'time_col': 'T','censor_col':'C','data_set': 'all' } #'coef':[{'0': 0.1, '1': 0.2, '2': -0.1}]
+        'kwargs': {'time_col': 'T','censor_col':'C'}#,'data_set': 'all' } #'coef':[{'0': 0.1, '1': 0.2, '2': -0.1}]
     },
     organization_ids=[org_ids[0]]
 )
