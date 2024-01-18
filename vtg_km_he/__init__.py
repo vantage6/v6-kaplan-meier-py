@@ -1,10 +1,17 @@
+from typing import Any, List, Dict, Tuple, Union
 import pandas as pd
 import numpy as np
+from vantage6.algorithm.client import AlgorithmClient
 from vantage6.algorithm.tools.util import info
 from vantage6.algorithm.tools.decorators import algorithm_client, data
 
 @algorithm_client
-def master(client, time_column, censor_column, organization_ids=None):
+def master(
+    client: AlgorithmClient,
+    time_column: str,
+    censor_column: str,
+    organization_ids: List[int] = None
+) -> Dict[str, Union[str, List[str]]]:
     """Compute Kaplan-Meier curve in a federated environment.
 
     Parameters:
@@ -28,11 +35,16 @@ def master(client, time_column, censor_column, organization_ids=None):
         client=client,
         ids=ids,
         time_column=time_column,
-        censor_column=censor_column)
+        censor_column=censor_column
+    )
     return {'kaplanMeier': km.to_json(), 'local_event_tables': [t.to_json() for t in local_event_tables]}
 
-
-def calculate_km(client, ids, time_column, censor_column):
+def calculate_km(
+    client: AlgorithmClient,
+    ids: List[int],
+    time_column: str,
+    censor_column: str
+) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Calculate Kaplan-Meier curve and local event tables.
 
     Parameters:
@@ -45,7 +57,7 @@ def calculate_km(client, ids, time_column, censor_column):
     - Tuple containing Kaplan-Meier curve (DataFrame) and local event tables (list of DataFrames)
     """
     info('Collecting unique event times')
-    kwargs_dict = {'time_column': time_column}  
+    kwargs_dict = {'time_column': time_column}
     method = 'get_unique_event_times'
     local_unique_event_times = launch_subtask(client, [method, kwargs_dict, ids])
     unique_event_times = {0}
@@ -54,7 +66,7 @@ def calculate_km(client, ids, time_column, censor_column):
     info(f'Collected unique event times for {len(local_unique_event_times)} organization(s)')
 
     info('Collecting local event tables')
-    kwargs_dict = {'time_column': time_column, 'unique_event_times': list(unique_event_times), "censor_column": censor_column}  
+    kwargs_dict = {'time_column': time_column, 'unique_event_times': list(unique_event_times), "censor_column": censor_column}
     method = 'get_km_event_table'
     local_event_tables = launch_subtask(client, [method, kwargs_dict, ids])
     local_event_tables = [pd.read_json(event_table) for event_table in local_event_tables]
@@ -70,7 +82,7 @@ def calculate_km(client, ids, time_column, censor_column):
     return km, local_event_tables
 
 @data(0)
-def get_unique_event_times(df: pd.DataFrame, *args, **kwargs):
+def get_unique_event_times(df: pd.DataFrame, *args, **kwargs) -> List[str]:
     """Get unique event times from a DataFrame.
 
     Parameters:
@@ -84,7 +96,7 @@ def get_unique_event_times(df: pd.DataFrame, *args, **kwargs):
     return df[time_column].unique().tolist()
 
 @data(1)
-def get_km_event_table(df: pd.DataFrame, *args, **kwargs):
+def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     """Calculate death counts, total counts, and at-risk counts at each unique event time.
 
     Parameters:
@@ -95,23 +107,23 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs):
     - JSON-formatted string representing the calculated event table
     """
     info(f"Sample size {str(len(df))}")
-    
+
     # parse kwargs
-    time_column = kwargs.get("time_column", "T")  
+    time_column = kwargs.get("time_column", "T")
     unique_event_times = kwargs.get("unique_event_times")
-    censor_column = kwargs.get("censor_column", "C") 
-    
+    censor_column = kwargs.get("censor_column", "C")
+
     # Calculate death counts at each unique event time
     death = df.groupby(time_column, as_index=False).sum().rename(columns={censor_column: 'Deaths'})[[time_column, 'Deaths']]
     death = pd.DataFrame(unique_event_times, columns=[time_column]).merge(death, on=time_column, how='left').fillna(0)
-    
+
     # Calculate total counts at each unique event time
     total = df.groupby(time_column, as_index=False).count().rename(columns={censor_column: 'Total'})[[time_column, 'Total']]
     total = pd.DataFrame(unique_event_times, columns=[time_column]).merge(total, on=time_column, how='left').fillna(0)
-    
+
     # Merge death and total DataFrames on the time column
     km = death.merge(total, on=time_column)
-    
+
     # Calculate "at-risk" counts at each unique event time and merge with km DataFrame
     return km.merge(
         pd.DataFrame.from_dict({
@@ -121,8 +133,10 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs):
         right_index=True
     ).to_json()
 
-
-def launch_subtask(client, task_info):
+def launch_subtask(
+    client: AlgorithmClient,
+    task_info: List[Any]
+) -> List[Dict[str, Union[str, List[str]]]]:
     """Launch a subtask to organizations and wait for results.
 
     Parameters:

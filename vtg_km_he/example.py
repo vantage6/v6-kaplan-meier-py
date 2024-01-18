@@ -1,5 +1,4 @@
 from vantage6.algorithm.tools.mock_client import MockAlgorithmClient
-import vtg_km_he
 import numpy as np
 import warnings
 import pandas as pd
@@ -31,7 +30,7 @@ average_task = client.task.create(
     input_={
         'master': 1,
         'method': 'master',
-        'kwargs': {'time_col': 'T','censor_col':'C'}#,'data_set': 'all' } #'coef':[{'0': 0.1, '1': 0.2, '2': -0.1}]
+        'kwargs': {'time_column': 'T','censor_column':'C'}
     },
     organizations=[org_ids[0]]
 )
