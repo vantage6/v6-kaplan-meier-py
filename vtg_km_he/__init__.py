@@ -1,12 +1,15 @@
 import time
-from vantage6.tools.util import info
+from vantage6.algorithm.tools.util import info
+from vantage6.algorithm.client import AlgorithmClient
+from vantage6.algorithm.tools.decorators import algorithm_client, data
 from itertools import product
 import pandas as pd
 import numpy as np
 import math
 
-
-def master(client, data, time_col, censor_col, organization_ids=None):
+@algorithm_client
+@data(1)
+def master(client, df, time_col, censor_col, organization_ids=None):
     """This package does the following:
             2. Calculates the coordinates of the Kaplan Meier curve
     """
@@ -24,12 +27,12 @@ def master(client, data, time_col, censor_col, organization_ids=None):
     km,local_event_tables = calculate_KM(client, ids, time_col)
     return {'kaplanMeier': km, 'local_event_tables': local_event_tables}
 
-
+@algorithm_client
 def calculate_KM(client, ids, time_col):
 
     kwargs_dict = {'time_col': time_col}  
     method = 'get_unique_event_times'
-    results = subtaskLauncher(client, [method, kwargs_dict, ids])
+    results = launch_subtask(client, [method, kwargs_dict, ids])
 
     local_uet = []
     for output in results:
@@ -42,7 +45,7 @@ def calculate_KM(client, ids, time_col):
 
     kwargs_dict = {'time_col': time_col, 'unique_event_times': unique_event_times}  
     method = 'get_km_event_table'
-    results = subtaskLauncher(client, [method, kwargs_dict, ids])
+    results = launch_subtask(client, [method, kwargs_dict, ids])
 
     local_event_tables = []
     for output in results:
@@ -55,19 +58,17 @@ def calculate_KM(client, ids, time_col):
     km['pmf'] = np.diff(km['cdf'], prepend=0)
     return km, local_event_tables
 
-
-
-
-def RPC_get_unique_event_times(data, time_col):#, data_set, filt, median_lp):
+@data(2)
+def get_unique_event_times(df: pd.DataFrame, time_col):#, data_set, filt, median_lp):
     """Get Unique Event Times
     """
     #df = data_selector(data, data_set,filt, median_lp) #data_set, filt=None, median_lp=None)
     return {
-        "unique_event_times": data[time_col].unique()}
+        "unique_event_times": df[time_col].unique()}
 
-
-def RPC_get_km_event_table(data, time_col, unique_event_times, censor_col="C"):
-    df = data.copy()
+@data(3)
+def get_km_event_table(df: pd.DataFrame, time_col, unique_event_times, censor_col="C"):
+    df = df.copy()
     
     info(str(len(df)))
     death = df.groupby(time_col, as_index=False).sum().rename(columns={'C': 'Deaths'})[[time_col, 'Deaths']]
@@ -83,13 +84,13 @@ def RPC_get_km_event_table(data, time_col, unique_event_times, censor_col="C"):
         columns={0: 'AtRisk'}).sort_index(), left_on=time_col, right_index=True)
     return {'event_table':km}
 
-
-def subtaskLauncher(client, taskInfo):
+@algorithm_client
+def launch_subtask(client, taskInfo):
     method, kwargs_dict, ids = taskInfo
 
     info(f'sending task to organizations {ids}')
 
-    task = client.create_new_task(
+    task = client.task.create(
         input_={
             'method': method,
             'kwargs': kwargs_dict
@@ -97,14 +98,18 @@ def subtaskLauncher(client, taskInfo):
         organization_ids=ids
     )
 
+    # info("Waiting for results")
+    # task_id = task.get("id")
+    # task = client.get_task(task_id)
+    # while not task.get("complete"):
+    #     task = client.get_task(task_id)
+    #     info("Waiting for results")
+    #     time.sleep(1)
+    # # Once we know the partials are complete, we can collect them.
+    # info("Obtaining results")
+    # results = client.get_results(task_id=task.get("id"))
     info("Waiting for results")
-    task_id = task.get("id")
-    task = client.get_task(task_id)
-    while not task.get("complete"):
-        task = client.get_task(task_id)
-        info("Waiting for results")
-        time.sleep(1)
-    # Once we know the partials are complete, we can collect them.
-    info("Obtaining results")
-    results = client.get_results(task_id=task.get("id"))
+    results = client.wait_for_results(task_id=task.get("id"), interval=1)
+    info("Results obtained!")
+    
     return results

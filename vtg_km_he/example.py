@@ -1,7 +1,8 @@
-from vantage6.tools.mock_client import ClientMockProtocol
+from vantage6.algorithm.tools.mock_client import MockAlgorithmClient
 import vtg_km_he
 import numpy as np
 import warnings
+import pandas as pd
 warnings.filterwarnings("ignore")
 
 # Initialize the mock server. The datasets simulate the local datasets from
@@ -9,9 +10,11 @@ warnings.filterwarnings("ignore")
 # a.csv and b.csv. The module name needs to be the name of your algorithm
 # package. This is the name you specified in `setup.py`, in our case that
 # would be v6-correlation-matrix-py.
-client = ClientMockProtocol(
-    datasets=["vtg_km_he/local/data_test.csv", "vtg_km_he/local/data_test.csv"],
-#    datasets=["./local/TR_Maastricht_data (1).csv", "./local/TR_Maastricht_data (1).csv"],
+dataset_1 = {"database": pd.read_csv("vtg_km_he/local/data_test.csv"), "db_type": "csv"}
+
+client = MockAlgorithmClient(
+    datasets = [[dataset_1, dataset_1]],
+    # datasets=["vtg_km_he/local/data_test.csv", "vtg_km_he/local/data_test.csv"],
     module="vtg_km_he"#"vtg_km"
 )
 
@@ -24,7 +27,7 @@ org_ids = ids = [1,2]
 # to the input. Also note that we only supply the task to a single organization
 # as we only want to execute the central part of the algorithm once. The master
 # task takes care of the distribution to the other parties.
-average_task = client.create_new_task(
+average_task = client.task.create(
     input_={
         'master': 1,
         'method': 'master',
