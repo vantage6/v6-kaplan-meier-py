@@ -10,18 +10,23 @@ warnings.filterwarnings("ignore")
 # a.csv and b.csv. The module name needs to be the name of your algorithm
 # package. This is the name you specified in `setup.py`, in our case that
 # would be v6-correlation-matrix-py.
-dataset_1 = {"database": pd.read_csv("vtg_km_he/local/data_test.csv"), "db_type": "csv"}
+dataset_1 = {"database": "./vtg_km_he/local/data_test.csv", "db_type": "csv"}
+dataset_2 = {"database": "./vtg_km_he/local/data_test.csv", "db_type": "csv"}
+org_ids = ids = [0, 1]
 
 client = MockAlgorithmClient(
-    datasets = [[dataset_1, dataset_1]],
-    # datasets=["vtg_km_he/local/data_test.csv", "vtg_km_he/local/data_test.csv"],
-    module="vtg_km_he"#"vtg_km"
+    datasets = [[dataset_1, dataset_2]],
+    organization_ids=org_ids,
+    module="vtg_km_he"
 )
 
 
-org_ids = ids = [1,2]
 
 
+organizations = client.organization.list()
+print(organizations)
+org_ids = ids = [organization["id"] for organization in organizations]
+print(f"ORG_IDs: {org_ids}")
 
 # To trigger the master method you also need to supply the `master`-flag
 # to the input. Also note that we only supply the task to a single organization
@@ -33,10 +38,11 @@ average_task = client.task.create(
         'method': 'master',
         'kwargs': {'time_col': 'T','censor_col':'C'}#,'data_set': 'all' } #'coef':[{'0': 0.1, '1': 0.2, '2': -0.1}]
     },
-    organization_ids=[org_ids[0]]
+    organizations=[org_ids[0]]
 )
+print(f"CREATED TASK: {average_task}")
 
-results = client.get_results(average_task.get("id"))
+results = client.result.get(average_task.get("id"))
 print(results)
 try:
     results[0]['kaplanMeier'].to_csv('pippo.csv')
