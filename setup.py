@@ -20,6 +20,6 @@ setup(
     packages=find_packages(),
     python_requires='>=3.10',
     install_requires=[
-        'vantage6-algorithm-tools==4.1.3','numpy','pandas','scikit-learn'
+        'vantage6-algorithm-tools==4.2.0','numpy','pandas','scikit-learn'
     ]
 )
