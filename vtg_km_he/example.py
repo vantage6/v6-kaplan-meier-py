@@ -15,18 +15,13 @@ dataset_2 = {"database": "./vtg_km_he/local/data_test.csv", "db_type": "csv"}
 org_ids = ids = [0, 1]
 
 client = MockAlgorithmClient(
-    datasets = [[dataset_1, dataset_2]],
+    datasets = [[dataset_1], [dataset_2]],
     organization_ids=org_ids,
     module="vtg_km_he"
 )
 
-
-
-
 organizations = client.organization.list()
-print(organizations)
 org_ids = ids = [organization["id"] for organization in organizations]
-print(f"ORG_IDs: {org_ids}")
 
 # To trigger the master method you also need to supply the `master`-flag
 # to the input. Also note that we only supply the task to a single organization
@@ -40,13 +35,13 @@ average_task = client.task.create(
     },
     organizations=[org_ids[0]]
 )
-print(f"CREATED TASK: {average_task}")
 
 results = client.result.get(average_task.get("id"))
-print(results)
+results['kaplanMeier'] = pd.read_json(results['kaplanMeier'])
+results['local_event_tables'] = [pd.read_json(value) for value in results['local_event_tables']]
 try:
-    results[0]['kaplanMeier'].to_csv('pippo.csv')
+    results['kaplanMeier'].to_csv('pippo.csv')
 except:
-    results[0]['kaplanMeierLR'].to_csv('pippo_lr.csv')
-    results[0]['kaplanMeierHR'].to_csv('pippo_hr.csv')
+    results['kaplanMeierLR'].to_csv('pippo_lr.csv')
+    results['kaplanMeierHR'].to_csv('pippo_hr.csv')
 

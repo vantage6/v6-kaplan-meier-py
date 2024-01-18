@@ -1,107 +1,139 @@
-import time
-from vantage6.algorithm.tools.util import info
-from vantage6.algorithm.client import AlgorithmClient
-from vantage6.algorithm.tools.decorators import algorithm_client, data
-from itertools import product
 import pandas as pd
 import numpy as np
-import math
-
-from .utils import numpy_array_to_json, json_to_numpy_array
+from vantage6.algorithm.tools.util import info
+from vantage6.algorithm.tools.decorators import algorithm_client, data
 
 @algorithm_client
-def master(client, time_col, censor_col, organization_ids=None):
-    """This package does the following:
-            2. Calculates the coordinates of the Kaplan Meier curve
-    """
+def master(client, time_column, censor_column, organization_ids=None):
+    """Compute Kaplan-Meier curve in a federated environment.
 
-    info('Collecting participating organizations')
-    if isinstance(organization_ids, list) is False:
+    Parameters:
+    - client: Vantage6 client object
+    - time_column: Name of the column representing time
+    - censor_column: Name of the column representing censoring
+    - organization_ids: List of organization IDs to include (default: None, includes all)
+
+    Returns:
+    - Dictionary containing Kaplan-Meier curve and local event tables
+    """
+    info('Collecting information on participating organizations')
+    if not isinstance(organization_ids, list):
         organizations = client.organization.list()
         ids = [organization.get("id") for organization in organizations]
     else:
         ids = organization_ids
+    info(f'Sending task to organizations {ids}')
 
-    info(f'sending task to organizations {ids}')
-
-    print("CLIENT: ", client)
-    km,local_event_tables = calculate_KM(client=client, ids=ids, time_col=time_col, censor_col=censor_col)
-    print(km, local_event_tables)
+    km, local_event_tables = calculate_km(
+        client=client,
+        ids=ids,
+        time_column=time_column,
+        censor_column=censor_column)
     return {'kaplanMeier': km.to_json(), 'local_event_tables': [t.to_json() for t in local_event_tables]}
 
 
-def calculate_KM(client, ids, time_col, censor_col):
+def calculate_km(client, ids, time_column, censor_column):
+    """Calculate Kaplan-Meier curve and local event tables.
 
+    Parameters:
+    - client: Vantage6 client object
+    - ids: List of organization IDs
+    - time_column: Name of the column representing time
+    - censor_column: Name of the column representing censoring
+
+    Returns:
+    - Tuple containing Kaplan-Meier curve (DataFrame) and local event tables (list of DataFrames)
+    """
     info('Collecting unique event times')
-    kwargs_dict = {'time_col': time_col}  
+    kwargs_dict = {'time_column': time_column}  
     method = 'get_unique_event_times'
-    unique_event_times_aggregated = launch_subtask(client, [method, kwargs_dict, ids])
-    info(f'Collected unique event times for {len(unique_event_times_aggregated)} organization(s)')
+    local_unique_event_times = launch_subtask(client, [method, kwargs_dict, ids])
+    unique_event_times = {0}
+    for local_unique_event_times in local_unique_event_times:
+        unique_event_times |= set(local_unique_event_times)
+    info(f'Collected unique event times for {len(local_unique_event_times)} organization(s)')
 
-    local_uet = []
-    for site_unique_event_times in unique_event_times_aggregated:
-        local_uet.append(json_to_numpy_array(site_unique_event_times))
-
-    local_uet.append([0])
-    unique_event_times = list(set([item for sublist in local_uet for item in sublist]))
-
-    ##### 2) Ask to calculate local event tables #####
-
-    kwargs_dict = {'time_col': time_col, 'unique_event_times': unique_event_times, "censor_col": censor_col}  
+    info('Collecting local event tables')
+    kwargs_dict = {'time_column': time_column, 'unique_event_times': list(unique_event_times), "censor_column": censor_column}  
     method = 'get_km_event_table'
-    results = launch_subtask(client, [method, kwargs_dict, ids])
+    local_event_tables = launch_subtask(client, [method, kwargs_dict, ids])
+    local_event_tables = [pd.read_json(event_table) for event_table in local_event_tables]
+    info(f'Collected local event tables for {len(local_event_tables)} organization(s)')
 
-    local_event_tables = []
-    for output in results:
-        local_event_tables.append(pd.read_json(output['event_table']))
-
-    km = pd.concat(local_event_tables).groupby(time_col, as_index=False).sum()
+    info('Aggregating event tables')
+    km = pd.concat(local_event_tables).groupby(time_column, as_index=False).sum()
     km['Hazard'] = km['Deaths'] / km['AtRisk']
     km['Surv'] = (1 - km['Hazard']).cumprod()
     km['cdf'] = 1 - km['Surv']
     km['pmf'] = np.diff(km['cdf'], prepend=0)
+    info('Kaplan-Meier curve has been computed successfully')
     return km, local_event_tables
 
 @data(0)
-def get_unique_event_times(df: pd.DataFrame, *args, **kwargs):#, data_set, filt, median_lp):
-    """Get Unique Event Times
+def get_unique_event_times(df: pd.DataFrame, *args, **kwargs):
+    """Get unique event times from a DataFrame.
+
+    Parameters:
+    - df: Input DataFrame
+    - kwargs: Additional keyword arguments, including time_column
+
+    Returns:
+    - List of unique event times
     """
-    time_col = kwargs.get("time_col")
-    unique_event_times = df[time_col].unique()
-    print(type(unique_event_times))
-    #df = data_selector(data, data_set,filt, median_lp) #data_set, filt=None, median_lp=None)
-    return numpy_array_to_json(unique_event_times)
+    time_column = kwargs.get("time_column")
+    return df[time_column].unique().tolist()
 
 @data(1)
 def get_km_event_table(df: pd.DataFrame, *args, **kwargs):
+    """Calculate death counts, total counts, and at-risk counts at each unique event time.
 
+    Parameters:
+    - df: Input DataFrame
+    - kwargs: Additional keyword arguments, including time_column, unique_event_times, and censor_column
 
-    # parse kwargs
-    time_col = kwargs.get("time_col", "T")
-    unique_event_times = kwargs.get("unique_event_times")
-    censor_col = kwargs.get("censor_col", "C")
-
-    df = df.copy()
+    Returns:
+    - JSON-formatted string representing the calculated event table
+    """
+    info(f"Sample size {str(len(df))}")
     
-    info(str(len(df)))
-    death = df.groupby(time_col, as_index=False).sum().rename(columns={'C': 'Deaths'})[[time_col, 'Deaths']]
-    death = pd.DataFrame(unique_event_times, columns=[time_col]).merge(death, on=time_col, how='left').fillna(0)
+    # parse kwargs
+    time_column = kwargs.get("time_column", "T")  
+    unique_event_times = kwargs.get("unique_event_times")
+    censor_column = kwargs.get("censor_column", "C") 
+    
+    # Calculate death counts at each unique event time
+    death = df.groupby(time_column, as_index=False).sum().rename(columns={censor_column: 'Deaths'})[[time_column, 'Deaths']]
+    death = pd.DataFrame(unique_event_times, columns=[time_column]).merge(death, on=time_column, how='left').fillna(0)
+    
+    # Calculate total counts at each unique event time
+    total = df.groupby(time_column, as_index=False).count().rename(columns={censor_column: 'Total'})[[time_column, 'Total']]
+    total = pd.DataFrame(unique_event_times, columns=[time_column]).merge(total, on=time_column, how='left').fillna(0)
+    
+    # Merge death and total DataFrames on the time column
+    km = death.merge(total, on=time_column)
+    
+    # Calculate "at-risk" counts at each unique event time and merge with km DataFrame
+    return km.merge(
+        pd.DataFrame.from_dict({
+            unique_event_times[i]: len(df[df[time_column] >= unique_event_times[i]]) for i in range(len(unique_event_times))
+        }, orient='index').rename(columns={0: 'AtRisk'}).sort_index(),
+        left_on=time_column,
+        right_index=True
+    ).to_json()
 
-    total = df.groupby(time_col, as_index=False).count().rename(columns={'C': 'Total'})[[time_col, 'Total']]
-    total = pd.DataFrame(unique_event_times, columns=[time_col]).merge(total, on=time_col, how='left').fillna(0)
-
-    km = death.merge(total, on=time_col)
-
-    km = km.merge(pd.DataFrame.from_dict({unique_event_times[i]: len(df[df[time_col] >= unique_event_times[i]]) for
-                                          i in range(len(unique_event_times))}, orient='index').rename(
-        columns={0: 'AtRisk'}).sort_index(), left_on=time_col, right_index=True)
-    return {'event_table': km.to_json()}
 
 def launch_subtask(client, task_info):
+    """Launch a subtask to organizations and wait for results.
+
+    Parameters:
+    - client: Vantage6 client object
+    - task_info: List containing method, kwargs_dict, and organization IDs
+
+    Returns:
+    - Results obtained from organizations
+    """
     method, kwargs_dict, ids = task_info
-
-    info(f'sending task to organizations {ids} with {kwargs_dict}')
-
+    info(f'Sending task to organizations {ids}')
     task = client.task.create(
         input_={
             'method': method,
@@ -109,19 +141,7 @@ def launch_subtask(client, task_info):
         },
         organizations=ids
     )
-
-    # info("Waiting for results")
-    # task_id = task.get("id")
-    # task = client.get_task(task_id)
-    # while not task.get("complete"):
-    #     task = client.get_task(task_id)
-    #     info("Waiting for results")
-    #     time.sleep(1)
-    # # Once we know the partials are complete, we can collect them.
-    # info("Obtaining results")
-    # results = client.get_results(task_id=task.get("id"))
     info("Waiting for results")
     results = client.wait_for_results(task_id=task.get("id"), interval=1)
-    info(f"Results obtained for {task_info[0]}!")
-    
+    info(f"Results obtained for {method}!")
     return results
