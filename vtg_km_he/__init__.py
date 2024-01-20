@@ -61,8 +61,8 @@ def calculate_km(
     method = 'get_unique_event_times'
     local_unique_event_times = launch_subtask(client, [method, kwargs_dict, ids])
     unique_event_times = {0}
-    for local_unique_event_times in local_unique_event_times:
-        unique_event_times |= set(local_unique_event_times)
+    for local_unique_event_time in local_unique_event_times:
+        unique_event_times |= set(local_unique_event_time)
     info(f'Collected unique event times for {len(local_unique_event_times)} organization(s)')
 
     info('Collecting local event tables')
