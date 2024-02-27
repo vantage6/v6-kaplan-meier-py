@@ -63,7 +63,7 @@ def calculate_km(
     unique_event_times = {0}
     for local_unique_event_times in local_unique_event_times_aggregated:
         unique_event_times |= set(local_unique_event_times)
-    info(f'Collected unique event times for {len(local_unique_event_times)} organization(s)')
+    info(f'Collected unique event times for {len(local_unique_event_times_aggregated)} organization(s)')
 
     info('Collecting local event tables')
     kwargs_dict = {'time_column': time_column, 'unique_event_times': list(unique_event_times), "censor_column": censor_column}
