@@ -2,8 +2,10 @@ from typing import Any, List, Dict, Tuple, Union
 import pandas as pd
 import numpy as np
 from vantage6.algorithm.client import AlgorithmClient
-from vantage6.algorithm.tools.util import info
+from vantage6.algorithm.tools.util import info, error
 from vantage6.algorithm.tools.decorators import algorithm_client, data
+
+MINIMUM_ORGANIZATIONS = 3
 
 @algorithm_client
 def master(
@@ -29,8 +31,12 @@ def master(
         ids = [organization.get("id") for organization in organizations]
     else:
         ids = organization_ids
-    info(f'Sending task to organizations {ids}')
 
+    if len(ids) < MINIMUM_ORGANIZATIONS:
+        error(f"To further ensure privacy, a minimum of {MINIMUM_ORGANIZATIONS} participating organizations is required")
+        exit(1)
+
+    info(f'Sending task to organizations {ids}')
     km, local_event_tables = calculate_km(
         client=client,
         ids=ids,
