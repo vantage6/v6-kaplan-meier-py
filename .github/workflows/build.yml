@@ -33,7 +33,7 @@ jobs:
         with:
           context: .
           push: false
-          tags: ghcr.io/${{ env.REPO }}:${{ github.ref_name }}
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}/v6-km-studyathon:${{ github.ref_name }}
       - name: Print DigestID
         run: |
           echo 'Digest: ${{ steps.docker_build.outputs.digest }}'
