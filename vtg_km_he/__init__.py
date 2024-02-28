@@ -6,7 +6,9 @@ from vantage6.algorithm.client import AlgorithmClient
 from vantage6.algorithm.tools.util import info, error
 from vantage6.algorithm.tools.decorators import algorithm_client, data
 
+
 MINIMUM_ORGANIZATIONS = 3
+
 
 @algorithm_client
 def master(
@@ -52,6 +54,7 @@ def master(
         query_string=query_string
     )
     return {'kaplanMeier': km.to_json(), 'local_event_tables': [t.to_json() for t in local_event_tables]}
+
 
 def calculate_km(
     client: AlgorithmClient,
@@ -119,6 +122,7 @@ def calculate_km(
     km['survival_cdf'] = (1 - km['hazard']).cumprod()
     info('Kaplan-Meier curve has been computed successfully')
     return km, local_event_tables
+
 
 @data(1)
 def get_unique_event_times(df: pd.DataFrame, *args, **kwargs) -> List[str]:
@@ -189,6 +193,7 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
 
     # Convert DataFrame to JSON
     return km_df.to_json()
+
 
 def launch_subtask(
     client: AlgorithmClient,
