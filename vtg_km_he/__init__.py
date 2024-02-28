@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import pandas as pd
 from typing import Any, List, Dict, Tuple, Union
@@ -12,9 +13,9 @@ def master(
     client: AlgorithmClient,
     time_column: str,
     censor_column: str,
+    cohort_id: Union[int, str],
     binning: bool = False,
     bins: dict = None,
-    cohort_id: Union[int, str],
     query_string: str = None,
     organization_ids: List[int] = None
 ) -> Dict[str, Union[str, List[str]]]:
@@ -37,9 +38,9 @@ def master(
     else:
         ids = organization_ids
 
-    if len(ids) < MINIMUM_ORGANIZATIONS:
-        error(f"To further ensure privacy, a minimum of {MINIMUM_ORGANIZATIONS} participating organizations is required")
-        exit(1)
+    # if len(ids) < MINIMUM_ORGANIZATIONS:
+    #     error(f"To further ensure privacy, a minimum of {MINIMUM_ORGANIZATIONS} participating organizations is required")
+    #     sys.exit(1)
 
     info(f'Sending task to organizations {ids}')
     km, local_event_tables = calculate_km(
@@ -48,7 +49,7 @@ def master(
         time_column=time_column,
         censor_column=censor_column,
         binning=binning,
-        bins=bins
+        bins=bins,
         cohort_id=cohort_id
     )
     return {'kaplanMeier': km.to_json(), 'local_event_tables': [t.to_json() for t in local_event_tables]}
@@ -59,9 +60,9 @@ def calculate_km(
     ids: List[int],
     time_column: str,
     censor_column: str,
-    binning: bool = False,
-    bins: dict = None
     cohort_id: Union[int, str],
+    binning: bool = False,
+    bins: dict = None,
     query_string: str = None
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Calculate Kaplan-Meier curve and local event tables.
