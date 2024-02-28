@@ -17,4 +17,4 @@ RUN pip install /app
 # wrapper takes care of the IO handling (communication between node and
 # algorithm). You dont need to change anything here.
 ENV PKG_NAME=${PKG_NAME}
-CMD python -c "from vantage6.tools.docker_wrapper import docker_wrapper; docker_wrapper('${PKG_NAME}')"
+CMD python -c "from vantage6.algorithm.tools.wrap import docker_wrapper; docker_wrapper('${PKG_NAME}')"
