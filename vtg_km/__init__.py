@@ -123,7 +123,7 @@ def calculate_km(
     info('Kaplan-Meier curve has been computed successfully')
     return km, local_event_tables
 
-@data(0)
+@data(1)
 def get_unique_event_times(df: pd.DataFrame, *args, **kwargs) -> List[str]:
     """Get unique event times from a DataFrame.
 
@@ -171,7 +171,7 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
             df[time_column], bins=unique_event_times,
             labels=unique_event_times[1:]
         ))
-    
+
 
     # Filter the local dataframe with the query
     info(f"Overall number of patients: {df.shape[0]}")
