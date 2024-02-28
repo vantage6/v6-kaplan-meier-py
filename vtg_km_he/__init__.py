@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 import pandas as pd
-from typing import Any, List, Dict, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 from vantage6.algorithm.client import AlgorithmClient
 from vantage6.algorithm.tools.util import info, error
 from vantage6.algorithm.tools.decorators import algorithm_client, data
@@ -82,7 +82,7 @@ def calculate_km(
         time_column_name=time_column_name,
         query_string=query_string)
     method = 'get_unique_event_times'
-    local_unique_event_times_aggregated = launch_subtask(client, [method, kwargs_dict, ids])
+    local_unique_event_times_aggregated = launch_subtask(client, method, kwargs_dict, ids)
     unique_event_times = {0}
     for local_unique_event_times in local_unique_event_times_aggregated:
         unique_event_times |= set(local_unique_event_times)
@@ -112,7 +112,7 @@ def calculate_km(
         binning=binning,
         query_string=query_string)
     method = 'get_km_event_table'
-    local_event_tables = launch_subtask(client, [method, kwargs_dict, ids])
+    local_event_tables = launch_subtask(client, method, kwargs_dict, ids)
     local_event_tables = [pd.read_json(event_table) for event_table in local_event_tables]
     info(f'Collected local event tables for {len(local_event_tables)} organization(s)')
 
@@ -197,26 +197,30 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
 
 def launch_subtask(
     client: AlgorithmClient,
-    task_info: List[Any]
+    method: Callable[[Any], Any],
+    ids: List[int],
+    **kwargs
 ) -> List[Dict[str, Union[str, List[str]]]]:
-    """Launch a subtask to organizations and wait for results.
+    """Launches a subtask to multiple organizations and waits for results.
 
     Parameters:
-    - client: Vantage6 client object
-    - task_info: List containing method, kwargs_dict, and organization IDs
+    - client: The Vantage6 client object used for communication with the server.
+    - method: The callable method/function to be executed as a subtask by the organizations.
+    - ids: A list of organization IDs to which the subtask will be distributed.
+    - **kwargs: Additional keyword arguments to be passed to the method/function.
 
     Returns:
-    - Results obtained from organizations
+    - A list of dictionaries containing results obtained from the organizations.
     """
-    method, kwargs_dict, ids = task_info
     info(f'Sending task to organizations {ids}')
     task = client.task.create(
         input_={
             'method': method,
-            'kwargs': kwargs_dict
+            'kwargs': kwargs
         },
         organizations=ids
     )
+
     info("Waiting for results")
     results = client.wait_for_results(task_id=task.get("id"), interval=1)
     info(f"Results obtained for {method}!")
