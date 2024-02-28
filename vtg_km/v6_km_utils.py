@@ -40,9 +40,11 @@ def calculate_km(
     # Apply binning to obfuscate event times
     if bin_size:
         info('Binning unique times')
+        info(f'Unique event times {unique_event_times}')
         unique_event_times = list(range(
-                0, int(np.max(list(unique_event_times))) + bin_size, bin_size
-            ))
+            0, int(max(unique_event_times)) + bin_size, bin_size
+        ))
+        info(f'Unique event times {unique_event_times}')
 
     info('Collecting local event tables')
     method_kwargs = dict(
@@ -59,7 +61,7 @@ def calculate_km(
 
     info('Aggregating event tables')
     km = pd.concat(local_event_tables).groupby(time_column_name, as_index=False).sum()
-    km['hazard'] = km['deaths'] / km['at_risk']
+    km['hazard'] = km['observed'] / km['at_risk']
     km['survival_cdf'] = (1 - km['hazard']).cumprod()
     info('Kaplan-Meier curve has been computed successfully')
     return km
@@ -127,12 +129,22 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     km_df = (
         df
         .groupby(time_column_name)
-        .agg(deaths=(censor_column_name, 'sum'), total=(censor_column_name, 'count'))
-        .reset_index()
+        .agg(
+            removed=(censor_column_name, 'count'),
+            observed=(censor_column_name, 'sum')
         )
+        .reset_index()
+    )
+    km_df['censored'] = km_df['removed'] - km_df['observed']
+
+    # Make sure all global times are available
+    km_df = pd.merge(
+        pd.DataFrame({time_column_name: unique_event_times}), km_df,
+        on=time_column_name, how='left'
+    ).fillna(0)
 
     # Calculate "at-risk" counts at each unique event time
-    km_df['at_risk'] = km_df['total'].iloc[::-1].cumsum().iloc[::-1]
+    km_df['at_risk'] = km_df['removed'].iloc[::-1].cumsum().iloc[::-1]
 
     # Convert DataFrame to JSON
     return km_df.to_json()
