@@ -92,14 +92,12 @@ def calculate_km(
                 0, int(np.max(list(unique_event_times))) + bin_size, bin_size
             )
 
-        info(f'Unique times: {unique_event_times}')
-
     info('Collecting local event tables')
     kwargs_dict = dict(
         time_column_name=time_column_name,
         unique_event_times=list(unique_event_times),
         censor_column_name=censor_column_name,
-        binning=binning,
+        bin_size=bin_size,
         query_string=query_string)
     method = 'get_km_event_table'
     local_event_tables = launch_subtask(client, method, kwargs_dict, ids)
@@ -148,10 +146,10 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     """
 
     # parse kwargs
-    time_column_name = kwargs.get("time_column_name", "T")  # Renamed for clarity
+    time_column_name = kwargs.get("time_column_name")
     unique_event_times = kwargs.get("unique_event_times")
-    censor_column_name = kwargs.get("censor_column_name", "C")  # Renamed for clarity
-    binning = kwargs.get("binning")
+    censor_column_name = kwargs.get("censor_column_name")
+    bin_size = kwargs.get("bin_size", None)
     query_string = kwargs.get("query_string", None)
 
     # Filter the local dataframe with the query
@@ -160,7 +158,7 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     info(f"Number of patients in the cohort: {df.shape[0]}")
 
     # Apply binning to obfuscate event times
-    if binning:
+    if bin_size:
         # Convert time_column to appropriate data type for binning if needed
         if not pd.api.types.is_numeric_dtype(df[time_column_name]):
             df[time_column_name] = pd.to_numeric(df[time_column_name], errors='coerce')
