@@ -15,8 +15,7 @@ def master(
     client: AlgorithmClient,
     time_column_name: str,
     censor_column_name: str,
-    binning: bool = False,
-    bins: dict = None,
+    bin_size: int = None,
     query_string: str = None,
     organization_ids: List[int] = None
 ) -> Dict[str, Union[str, List[str]]]:
@@ -49,8 +48,7 @@ def master(
         ids=ids,
         time_column_name=time_column_name,
         censor_column_name=censor_column_name,
-        binning=binning,
-        bins=bins,
+        bin_size=bin_size,
         query_string=query_string
     )
     return {'kaplanMeier': km.to_json(), 'local_event_tables': [t.to_json() for t in local_event_tables]}
@@ -61,8 +59,7 @@ def calculate_km(
     ids: List[int],
     time_column_name: str,
     censor_column_name: str,
-    binning: bool = False,
-    bins: dict = None,
+    bin_size: int = None,
     query_string: str = None
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Calculate Kaplan-Meier curve and local event tables.
@@ -89,20 +86,13 @@ def calculate_km(
     info(f'Collected unique event times for {len(local_unique_event_times_aggregated)} organization(s)')
 
     # Apply binning to obfuscate event times
-    if binning:
-        try:
-            # Define bins for time events
-            info('Binning unique times')
-            unique_event_times = list(
-                range(
-                    0,
-                    int(np.max(list(unique_event_times))+bins['size']),
-                    bins['size']
-                )
+    if bin_size:
+        info('Binning unique times')
+        unique_event_times = np.arange(
+                0, int(np.max(list(unique_event_times))) + bin_size, bin_size
             )
-            info(f'Unique times: {unique_event_times}')
-        except Exception as e:
-            info(f'Exception occurred with input \'bins\': {e}')
+
+        info(f'Unique times: {unique_event_times}')
 
     info('Collecting local event tables')
     kwargs_dict = dict(
@@ -141,7 +131,8 @@ def get_unique_event_times(df: pd.DataFrame, *args, **kwargs) -> List[str]:
         df
         .query(query_string)[time_column_name]
         .unique()
-        .tolist())
+        .tolist()
+        )
 
 
 @data(1)
@@ -186,7 +177,8 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
         df
         .groupby(time_column_name)
         .agg(deaths=(censor_column_name, 'sum'), total=(censor_column_name, 'count'))
-        .reset_index())
+        .reset_index()
+        )
 
     # Calculate "at-risk" counts at each unique event time
     km_df['at_risk'] = km_df['total'].iloc[::-1].cumsum().iloc[::-1]
