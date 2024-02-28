@@ -122,7 +122,7 @@ def calculate_km(
     info('Kaplan-Meier curve has been computed successfully')
     return km, local_event_tables
 
-@data(0)
+@data(1)
 def get_unique_event_times(df: pd.DataFrame, *args, **kwargs) -> List[str]:
     """Get unique event times from a DataFrame.
 
@@ -177,25 +177,54 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     df = df.query(query_string)
     info(f"Number of patients in the cohort: {df.shape[0]}")
 
-    # Calculate death counts at each unique event time
-    death = df.groupby(time_column, as_index=False).sum().rename(columns={censor_column: 'Deaths'})[[time_column, 'Deaths']]
-    death = pd.DataFrame(unique_event_times, columns=[time_column]).merge(death, on=time_column, how='left').fillna(0)
+    # Group by the time column, aggregating both death and total counts simultaneously
+    km_df = (
+        df
+        .groupby(time_column)
+        .agg(Deaths=(censor_column, 'sum'), Total=(censor_column, 'count'))
+        .reset_index())
 
-    # Calculate total counts at each unique event time
-    total = df.groupby(time_column, as_index=False).count().rename(columns={censor_column: 'Total'})[[time_column, 'Total']]
-    total = pd.DataFrame(unique_event_times, columns=[time_column]).merge(total, on=time_column, how='left').fillna(0)
+    # Calculate "at-risk" counts at each unique event time directly within the groupby operation
+    # by subtracting the cumulative sum of total counts from the total count
+    km_df['AtRisk'] = km_df['Total'].iloc[::-1].cumsum().iloc[::-1]
 
-    # Merge death and total DataFrames on the time column
-    km = death.merge(total, on=time_column)
+    # Convert DataFrame to JSON
+    return km_df.to_json()
 
-    # Calculate "at-risk" counts at each unique event time and merge with km DataFrame
-    return km.merge(
-        pd.DataFrame.from_dict({
-            unique_event_times[i]: len(df[df[time_column] >= unique_event_times[i]]) for i in range(len(unique_event_times))
-        }, orient='index').rename(columns={0: 'AtRisk'}).sort_index(),
-        left_on=time_column,
-        right_index=True
-    ).to_json()
+
+    # # Calculate death counts at each unique event time
+    # deaths_df = (
+    #     df
+    #     .groupby(time_column, as_index=False)
+    #     .sum()
+    #     .rename(columns={censor_column: 'Deaths'})[[time_column, 'Deaths']])
+    # deaths_df = (
+    #     pd.DataFrame(unique_event_times, columns=[time_column])
+    #     .merge(deaths_df, on=time_column, how='left')
+    #     .fillna(0))
+
+    # # Calculate total counts at each unique event time
+    # total = (
+    #     df
+    #     .groupby(time_column, as_index=False)
+    #     .count()
+    #     .rename(columns={censor_column: 'Total'})[[time_column, 'Total']])
+    # total = (
+    #     pd.DataFrame(unique_event_times, columns=[time_column])
+    #     .merge(total, on=time_column, how='left')
+    #     .fillna(0))
+
+    # # Merge death and total DataFrames on the time column
+    # km_df = deaths_df.merge(total, on=time_column, how='inner')
+
+    # # Calculate "at-risk" counts at each unique event time and merge with km DataFrame
+    # return km_df.merge(
+    #     pd.DataFrame.from_dict({
+    #         unique_event_times[i]: len(df[df[time_column] >= unique_event_times[i]]) for i in range(len(unique_event_times))
+    #     }, orient='index').rename(columns={0: 'AtRisk'}).sort_index(),
+    #     left_on=time_column,
+    #     right_index=True
+    # ).to_json()
 
 def launch_subtask(
     client: AlgorithmClient,
