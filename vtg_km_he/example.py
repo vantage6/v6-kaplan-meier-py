@@ -46,7 +46,7 @@ average_task = client.task.create(
         'kwargs': {
             'time_column': 'T',
             'censor_column':'C',
-            'method': 'binning',
+            'binning': False,
             'bins': {'size': 5}
         }
     },
@@ -56,7 +56,7 @@ average_task = client.task.create(
 results = client.result.get(average_task.get("id"))
 results['kaplanMeier'] = pd.read_json(results['kaplanMeier'])
 results['local_event_tables'] = [pd.read_json(value) for value in results['local_event_tables']]
-df_events = results['kaplanMeier']
+df_events_nobin = results['kaplanMeier']
 try:
     results['kaplanMeier'].to_csv('pippo.csv')
 except:

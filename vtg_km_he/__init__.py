@@ -11,7 +11,7 @@ def master(
     client: AlgorithmClient,
     time_column: str,
     censor_column: str,
-    method: str = 'km',
+    binning: bool = False,
     bins: dict = None,
     organization_ids: List[int] = None
 ) -> Dict[str, Union[str, List[str]]]:
@@ -21,7 +21,7 @@ def master(
     - client: Vantage6 client object
     - time_column: Name of the column representing time
     - censor_column: Name of the column representing censoring
-    - method: Simple KM or use binning to obfuscate events
+    - binning: Simple KM or use binning to obfuscate events
     - organization_ids: List of organization IDs to include (default: None, includes all)
 
     Returns:
@@ -40,7 +40,7 @@ def master(
         ids=ids,
         time_column=time_column,
         censor_column=censor_column,
-        method=method,
+        binning=binning,
         bins=bins
     )
     return {'kaplanMeier': km.to_json(), 'local_event_tables': [t.to_json() for t in local_event_tables]}
@@ -51,7 +51,7 @@ def calculate_km(
     ids: List[int],
     time_column: str,
     censor_column: str,
-    method: str = 'km',
+    binning: bool = False,
     bins: dict = None
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Calculate Kaplan-Meier curve and local event tables.
@@ -61,7 +61,7 @@ def calculate_km(
     - ids: List of organization IDs
     - time_column: Name of the column representing time
     - censor_column: Name of the column representing censoring
-    - method: Simple KM or use binning to obfuscate events
+    - binning: Simple KM or use binning to obfuscate events
 
     Returns:
     - Tuple containing Kaplan-Meier curve (DataFrame) and local event tables (list of DataFrames)
@@ -76,13 +76,18 @@ def calculate_km(
     info(f'Collected unique event times for {len(local_unique_event_times_aggregated)} organization(s)')
 
     # Apply binning to obfuscate event times
-    if method == 'binning':
+    if binning:
         try:
             # Define bins for time events
             info('Binning unique times')
             unique_event_times = list(
-                range(0, np.max(unique_event_times)+bins['size'], bins['size'])
+                range(
+                    0,
+                    int(np.max(list(unique_event_times))+bins['size']),
+                    bins['size']
+                )
             )
+            info(f'Unique times: {unique_event_times}')
         except Exception as e:
             info(f'Exception occurred with input \'bins\': {e}')
 
@@ -91,7 +96,7 @@ def calculate_km(
         'time_column': time_column,
         'unique_event_times': list(unique_event_times),
         'censor_column': censor_column,
-        'method': method
+        'binning': binning
     }
     method = 'get_km_event_table'
     local_event_tables = launch_subtask(client, [method, kwargs_dict, ids])
@@ -139,13 +144,13 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     time_column = kwargs.get("time_column", "T")
     unique_event_times = kwargs.get("unique_event_times")
     censor_column = kwargs.get("censor_column", "C")
-    method = kwargs.get("method")
+    binning = kwargs.get("binning")
 
     # Apply binning to obfuscate event times
-    if method == 'binning':
+    if binning:
         # Bin event time data
         info('Binning event times to compute tables')
-        df[time_column] = np.float16(pd.cut(
+        df[time_column] = np.float64(pd.cut(
             df[time_column], bins=unique_event_times,
             labels=unique_event_times[1:]
         ))
