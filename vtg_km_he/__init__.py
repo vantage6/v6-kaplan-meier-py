@@ -115,10 +115,8 @@ def calculate_km(
 
     info('Aggregating event tables')
     km = pd.concat(local_event_tables).groupby(time_column_name, as_index=False).sum()
-    km['Hazard'] = km['Deaths'] / km['AtRisk']
-    km['Surv'] = (1 - km['Hazard']).cumprod()
-    km['cdf'] = 1 - km['Surv']
-    km['pmf'] = np.diff(km['cdf'], prepend=0)
+    km['hazard'] = km['deaths'] / km['at_risk']
+    km['survival_cdf'] = (1 - km['hazard']).cumprod()
     info('Kaplan-Meier curve has been computed successfully')
     return km, local_event_tables
 
@@ -183,11 +181,11 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     km_df = (
         df
         .groupby(time_column_name)
-        .agg(Deaths=(censor_column_name, 'sum'), Total=(censor_column_name, 'count'))
+        .agg(deaths=(censor_column_name, 'sum'), total=(censor_column_name, 'count'))
         .reset_index())
 
     # Calculate "at-risk" counts at each unique event time
-    km_df['AtRisk'] = km_df['Total'].iloc[::-1].cumsum().iloc[::-1]
+    km_df['at_risk'] = km_df['total'].iloc[::-1].cumsum().iloc[::-1]
 
     # Convert DataFrame to JSON
     return km_df.to_json()
