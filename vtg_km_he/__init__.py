@@ -13,7 +13,6 @@ def master(
     client: AlgorithmClient,
     time_column: str,
     censor_column: str,
-    cohort_id: Union[int, str],
     binning: bool = False,
     bins: dict = None,
     query_string: str = None,
@@ -50,17 +49,15 @@ def master(
         censor_column=censor_column,
         binning=binning,
         bins=bins,
-        cohort_id=cohort_id
+        query_string=query_string
     )
     return {'kaplanMeier': km.to_json(), 'local_event_tables': [t.to_json() for t in local_event_tables]}
-
 
 def calculate_km(
     client: AlgorithmClient,
     ids: List[int],
     time_column: str,
     censor_column: str,
-    cohort_id: Union[int, str],
     binning: bool = False,
     bins: dict = None,
     query_string: str = None
@@ -78,7 +75,9 @@ def calculate_km(
     - Tuple containing Kaplan-Meier curve (DataFrame) and local event tables (list of DataFrames)
     """
     info('Collecting unique event times')
-    kwargs_dict = dict(time_column=time_column, cohort_id=cohort_id)
+    kwargs_dict = dict(
+        time_column=time_column,
+        query_string=query_string)
     method = 'get_unique_event_times'
     local_unique_event_times_aggregated = launch_subtask(client, [method, kwargs_dict, ids])
     unique_event_times = {0}
@@ -108,7 +107,7 @@ def calculate_km(
         unique_event_times=list(unique_event_times),
         censor_column=censor_column,
         binning=binning,
-        cohort_id=cohort_id)
+        query_string=query_string)
     method = 'get_km_event_table'
     local_event_tables = launch_subtask(client, [method, kwargs_dict, ids])
     local_event_tables = [pd.read_json(event_table) for event_table in local_event_tables]
@@ -135,10 +134,10 @@ def get_unique_event_times(df: pd.DataFrame, *args, **kwargs) -> List[str]:
     - List of unique event times
     """
     time_column = kwargs.get("time_column")
-    cohort_id = kwargs.get("cohort_id")
+    query_string = kwargs.get("query_string")
     return (
         df
-        .query(f"COHORT_DEFINITION_ID == {cohort_id}")[time_column]
+        .query(query_string)[time_column]
         .unique()
         .tolist())
 
@@ -161,7 +160,7 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     unique_event_times = kwargs.get("unique_event_times")
     censor_column = kwargs.get("censor_column", "C")
     binning = kwargs.get("binning")
-    cohort_id = kwargs.get("cohort_id")
+    query_string = kwargs.get("query_string", None)
 
     # Apply binning to obfuscate event times
     if binning:
@@ -175,8 +174,8 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
 
     # Filter the local dataframe with the query
     info(f"Overall number of patients: {df.shape[0]}")
-    df = df.query(f"COHORT_DEFINITION_ID == {cohort_id}")
-    info(f"Number of patients in the cohort #{cohort_id}: {df.shape[0]}")
+    df = df.query(query_string)
+    info(f"Number of patients in the cohort: {df.shape[0]}")
 
     # Calculate death counts at each unique event time
     death = df.groupby(time_column, as_index=False).sum().rename(columns={censor_column: 'Deaths'})[[time_column, 'Deaths']]
