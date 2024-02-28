@@ -13,6 +13,8 @@ def master(
     censor_column: str,
     binning: bool = False,
     bins: dict = None,
+    cohort_id: Union[int, str],
+    query_string: str = None,
     organization_ids: List[int] = None
 ) -> Dict[str, Union[str, List[str]]]:
     """Compute Kaplan-Meier curve in a federated environment.
@@ -42,6 +44,7 @@ def master(
         censor_column=censor_column,
         binning=binning,
         bins=bins
+        cohort_id=cohort_id
     )
     return {'kaplanMeier': km.to_json(), 'local_event_tables': [t.to_json() for t in local_event_tables]}
 
@@ -53,6 +56,8 @@ def calculate_km(
     censor_column: str,
     binning: bool = False,
     bins: dict = None
+    cohort_id: Union[int, str],
+    query_string: str = None
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Calculate Kaplan-Meier curve and local event tables.
 
@@ -67,7 +72,7 @@ def calculate_km(
     - Tuple containing Kaplan-Meier curve (DataFrame) and local event tables (list of DataFrames)
     """
     info('Collecting unique event times')
-    kwargs_dict = {'time_column': time_column}
+    kwargs_dict = dict(time_column=time_column, cohort_id=cohort_id)
     method = 'get_unique_event_times'
     local_unique_event_times_aggregated = launch_subtask(client, [method, kwargs_dict, ids])
     unique_event_times = {0}
@@ -92,12 +97,12 @@ def calculate_km(
             info(f'Exception occurred with input \'bins\': {e}')
 
     info('Collecting local event tables')
-    kwargs_dict = {
-        'time_column': time_column,
-        'unique_event_times': list(unique_event_times),
-        'censor_column': censor_column,
-        'binning': binning
-    }
+    kwargs_dict = dict(
+        time_column=time_column,
+        unique_event_times=list(unique_event_times),
+        censor_column=censor_column,
+        binning=binning,
+        cohort_id=cohort_id)
     method = 'get_km_event_table'
     local_event_tables = launch_subtask(client, [method, kwargs_dict, ids])
     local_event_tables = [pd.read_json(event_table) for event_table in local_event_tables]
@@ -124,7 +129,12 @@ def get_unique_event_times(df: pd.DataFrame, *args, **kwargs) -> List[str]:
     - List of unique event times
     """
     time_column = kwargs.get("time_column")
-    return df[time_column].unique().tolist()
+    cohort_id = kwargs.get("cohort_id")
+    return (
+        df
+        .query(f"COHORT_DEFINITION_ID == {cohort_id}")[time_column]
+        .unique()
+        .tolist())
 
 
 @data(1)
@@ -145,6 +155,7 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     unique_event_times = kwargs.get("unique_event_times")
     censor_column = kwargs.get("censor_column", "C")
     binning = kwargs.get("binning")
+    cohort_id = kwargs.get("cohort_id")
 
     # Apply binning to obfuscate event times
     if binning:
@@ -154,6 +165,12 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
             df[time_column], bins=unique_event_times,
             labels=unique_event_times[1:]
         ))
+    
+
+    # Filter the local dataframe with the query
+    info(f"Overall number of patients: {df.shape[0]}")
+    df = df.query(f"COHORT_DEFINITION_ID == {cohort_id}")
+    info(f"Number of patients in the cohort #{cohort_id}: {df.shape[0]}")
 
     # Calculate death counts at each unique event time
     death = df.groupby(time_column, as_index=False).sum().rename(columns={censor_column: 'Deaths'})[[time_column, 'Deaths']]
