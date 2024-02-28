@@ -153,7 +153,6 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     Returns:
     - JSON-formatted string representing the calculated event table
     """
-    info(f"Sample size {str(len(df))}")
 
     # parse kwargs
     time_column_name = kwargs.get("time_column_name", "T")  # Renamed for clarity
