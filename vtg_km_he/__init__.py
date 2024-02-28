@@ -11,8 +11,8 @@ MINIMUM_ORGANIZATIONS = 3
 @algorithm_client
 def master(
     client: AlgorithmClient,
-    time_column: str,
-    censor_column: str,
+    time_column_name: str,
+    censor_column_name: str,
     binning: bool = False,
     bins: dict = None,
     query_string: str = None,
@@ -22,8 +22,8 @@ def master(
 
     Parameters:
     - client: Vantage6 client object
-    - time_column: Name of the column representing time
-    - censor_column: Name of the column representing censoring
+    - time_column_name: Name of the column representing time
+    - censor_column_name: Name of the column representing censoring
     - binning: Simple KM or use binning to obfuscate events
     - organization_ids: List of organization IDs to include (default: None, includes all)
 
@@ -45,8 +45,8 @@ def master(
     km, local_event_tables = calculate_km(
         client=client,
         ids=ids,
-        time_column=time_column,
-        censor_column=censor_column,
+        time_column_name=time_column_name,
+        censor_column_name=censor_column_name,
         binning=binning,
         bins=bins,
         query_string=query_string
@@ -56,8 +56,8 @@ def master(
 def calculate_km(
     client: AlgorithmClient,
     ids: List[int],
-    time_column: str,
-    censor_column: str,
+    time_column_name: str,
+    censor_column_name: str,
     binning: bool = False,
     bins: dict = None,
     query_string: str = None
@@ -67,8 +67,8 @@ def calculate_km(
     Parameters:
     - client: Vantage6 client object
     - ids: List of organization IDs
-    - time_column: Name of the column representing time
-    - censor_column: Name of the column representing censoring
+    - time_column_name: Name of the column representing time
+    - censor_column_name: Name of the column representing censoring
     - binning: Simple KM or use binning to obfuscate events
 
     Returns:
@@ -76,7 +76,7 @@ def calculate_km(
     """
     info('Collecting unique event times')
     kwargs_dict = dict(
-        time_column=time_column,
+        time_column_name=time_column_name,
         query_string=query_string)
     method = 'get_unique_event_times'
     local_unique_event_times_aggregated = launch_subtask(client, [method, kwargs_dict, ids])
@@ -103,9 +103,9 @@ def calculate_km(
 
     info('Collecting local event tables')
     kwargs_dict = dict(
-        time_column=time_column,
+        time_column_name=time_column_name,
         unique_event_times=list(unique_event_times),
-        censor_column=censor_column,
+        censor_column_name=censor_column_name,
         binning=binning,
         query_string=query_string)
     method = 'get_km_event_table'
@@ -114,7 +114,7 @@ def calculate_km(
     info(f'Collected local event tables for {len(local_event_tables)} organization(s)')
 
     info('Aggregating event tables')
-    km = pd.concat(local_event_tables).groupby(time_column, as_index=False).sum()
+    km = pd.concat(local_event_tables).groupby(time_column_name, as_index=False).sum()
     km['Hazard'] = km['Deaths'] / km['AtRisk']
     km['Surv'] = (1 - km['Hazard']).cumprod()
     km['cdf'] = 1 - km['Surv']
@@ -128,16 +128,16 @@ def get_unique_event_times(df: pd.DataFrame, *args, **kwargs) -> List[str]:
 
     Parameters:
     - df: Input DataFrame
-    - kwargs: Additional keyword arguments, including time_column
+    - kwargs: Additional keyword arguments, including time_column_name and query_string
 
     Returns:
     - List of unique event times
     """
-    time_column = kwargs.get("time_column")
+    time_column_name = kwargs.get("time_column_name")
     query_string = kwargs.get("query_string")
     return (
         df
-        .query(query_string)[time_column]
+        .query(query_string)[time_column_name]
         .unique()
         .tolist())
 
@@ -148,7 +148,7 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
 
     Parameters:
     - df: Input DataFrame
-    - kwargs: Additional keyword arguments, including time_column, unique_event_times, and censor_column
+    - kwargs: Additional keyword arguments, including time_column_name, unique_event_times, and censor_column_name
 
     Returns:
     - JSON-formatted string representing the calculated event table
@@ -156,75 +156,42 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     info(f"Sample size {str(len(df))}")
 
     # parse kwargs
-    time_column = kwargs.get("time_column", "T")
+    time_column_name = kwargs.get("time_column_name", "T")  # Renamed for clarity
     unique_event_times = kwargs.get("unique_event_times")
-    censor_column = kwargs.get("censor_column", "C")
+    censor_column_name = kwargs.get("censor_column_name", "C")  # Renamed for clarity
     binning = kwargs.get("binning")
     query_string = kwargs.get("query_string", None)
-
-    # Apply binning to obfuscate event times
-    if binning:
-        # Bin event time data
-        info('Binning event times to compute tables')
-        df[time_column] = np.float64(pd.cut(
-            df[time_column], bins=unique_event_times,
-            labels=unique_event_times[1:]
-        ))
-    
 
     # Filter the local dataframe with the query
     info(f"Overall number of patients: {df.shape[0]}")
     df = df.query(query_string)
     info(f"Number of patients in the cohort: {df.shape[0]}")
 
+    # Apply binning to obfuscate event times
+    if binning:
+        # Convert time_column to appropriate data type for binning if needed
+        if not pd.api.types.is_numeric_dtype(df[time_column_name]):
+            df[time_column_name] = pd.to_numeric(df[time_column_name], errors='coerce')
+
+        # Bin event time data
+        info('Binning event times to compute tables')
+        df[time_column_name] = np.float64(pd.cut(
+            df[time_column_name], bins=unique_event_times,
+            labels=unique_event_times[1:]
+        ))
+
     # Group by the time column, aggregating both death and total counts simultaneously
     km_df = (
         df
-        .groupby(time_column)
-        .agg(Deaths=(censor_column, 'sum'), Total=(censor_column, 'count'))
+        .groupby(time_column_name)
+        .agg(Deaths=(censor_column_name, 'sum'), Total=(censor_column_name, 'count'))
         .reset_index())
 
-    # Calculate "at-risk" counts at each unique event time directly within the groupby operation
-    # by subtracting the cumulative sum of total counts from the total count
+    # Calculate "at-risk" counts at each unique event time
     km_df['AtRisk'] = km_df['Total'].iloc[::-1].cumsum().iloc[::-1]
 
     # Convert DataFrame to JSON
     return km_df.to_json()
-
-
-    # # Calculate death counts at each unique event time
-    # deaths_df = (
-    #     df
-    #     .groupby(time_column, as_index=False)
-    #     .sum()
-    #     .rename(columns={censor_column: 'Deaths'})[[time_column, 'Deaths']])
-    # deaths_df = (
-    #     pd.DataFrame(unique_event_times, columns=[time_column])
-    #     .merge(deaths_df, on=time_column, how='left')
-    #     .fillna(0))
-
-    # # Calculate total counts at each unique event time
-    # total = (
-    #     df
-    #     .groupby(time_column, as_index=False)
-    #     .count()
-    #     .rename(columns={censor_column: 'Total'})[[time_column, 'Total']])
-    # total = (
-    #     pd.DataFrame(unique_event_times, columns=[time_column])
-    #     .merge(total, on=time_column, how='left')
-    #     .fillna(0))
-
-    # # Merge death and total DataFrames on the time column
-    # km_df = deaths_df.merge(total, on=time_column, how='inner')
-
-    # # Calculate "at-risk" counts at each unique event time and merge with km DataFrame
-    # return km_df.merge(
-    #     pd.DataFrame.from_dict({
-    #         unique_event_times[i]: len(df[df[time_column] >= unique_event_times[i]]) for i in range(len(unique_event_times))
-    #     }, orient='index').rename(columns={0: 'AtRisk'}).sort_index(),
-    #     left_on=time_column,
-    #     right_index=True
-    # ).to_json()
 
 def launch_subtask(
     client: AlgorithmClient,
