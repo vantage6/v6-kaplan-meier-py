@@ -1,8 +1,8 @@
-from vantage6.algorithm.tools.mock_client import MockAlgorithmClient
-import numpy as np
 import os
 import warnings
+import numpy as np
 import pandas as pd
+from vantage6.algorithm.tools.mock_client import MockAlgorithmClient
 warnings.filterwarnings("ignore")
 
 
@@ -43,7 +43,12 @@ average_task = client.task.create(
     input_={
         'master': 1,
         'method': 'master',
-        'kwargs': {'time_column': 'T','censor_column':'C'}
+        'kwargs': {
+            'time_column': 'T',
+            'censor_column':'C',
+            'binning': False,
+            'bins': {'size': 5}
+        }
     },
     organizations=[org_ids[0]]
 )
@@ -51,7 +56,7 @@ average_task = client.task.create(
 results = client.result.get(average_task.get("id"))
 results['kaplanMeier'] = pd.read_json(results['kaplanMeier'])
 results['local_event_tables'] = [pd.read_json(value) for value in results['local_event_tables']]
-df_events = results['kaplanMeier']
+df_events_nobin = results['kaplanMeier']
 try:
     results['kaplanMeier'].to_csv('pippo.csv')
 except:

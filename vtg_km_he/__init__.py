@@ -1,17 +1,20 @@
-from typing import Any, List, Dict, Tuple, Union
-import pandas as pd
 import numpy as np
+import pandas as pd
+from typing import Any, List, Dict, Tuple, Union
 from vantage6.algorithm.client import AlgorithmClient
 from vantage6.algorithm.tools.util import info
 from vantage6.algorithm.tools.decorators import algorithm_client, data
+
 
 @algorithm_client
 def master(
     client: AlgorithmClient,
     time_column: str,
     censor_column: str,
+    binning: bool = False,
+    bins: dict = None,
     cohort_id: Union[int, str],
-    query_string: str = None, 
+    query_string: str = None,
     organization_ids: List[int] = None
 ) -> Dict[str, Union[str, List[str]]]:
     """Compute Kaplan-Meier curve in a federated environment.
@@ -20,6 +23,7 @@ def master(
     - client: Vantage6 client object
     - time_column: Name of the column representing time
     - censor_column: Name of the column representing censoring
+    - binning: Simple KM or use binning to obfuscate events
     - organization_ids: List of organization IDs to include (default: None, includes all)
 
     Returns:
@@ -38,15 +42,20 @@ def master(
         ids=ids,
         time_column=time_column,
         censor_column=censor_column,
+        binning=binning,
+        bins=bins
         cohort_id=cohort_id
     )
     return {'kaplanMeier': km.to_json(), 'local_event_tables': [t.to_json() for t in local_event_tables]}
+
 
 def calculate_km(
     client: AlgorithmClient,
     ids: List[int],
     time_column: str,
     censor_column: str,
+    binning: bool = False,
+    bins: dict = None
     cohort_id: Union[int, str],
     query_string: str = None
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
@@ -57,6 +66,7 @@ def calculate_km(
     - ids: List of organization IDs
     - time_column: Name of the column representing time
     - censor_column: Name of the column representing censoring
+    - binning: Simple KM or use binning to obfuscate events
 
     Returns:
     - Tuple containing Kaplan-Meier curve (DataFrame) and local event tables (list of DataFrames)
@@ -70,11 +80,28 @@ def calculate_km(
         unique_event_times |= set(local_unique_event_times)
     info(f'Collected unique event times for {len(local_unique_event_times_aggregated)} organization(s)')
 
+    # Apply binning to obfuscate event times
+    if binning:
+        try:
+            # Define bins for time events
+            info('Binning unique times')
+            unique_event_times = list(
+                range(
+                    0,
+                    int(np.max(list(unique_event_times))+bins['size']),
+                    bins['size']
+                )
+            )
+            info(f'Unique times: {unique_event_times}')
+        except Exception as e:
+            info(f'Exception occurred with input \'bins\': {e}')
+
     info('Collecting local event tables')
     kwargs_dict = dict(
         time_column=time_column,
         unique_event_times=list(unique_event_times),
         censor_column=censor_column,
+        binning=binning,
         cohort_id=cohort_id)
     method = 'get_km_event_table'
     local_event_tables = launch_subtask(client, [method, kwargs_dict, ids])
@@ -109,6 +136,7 @@ def get_unique_event_times(df: pd.DataFrame, *args, **kwargs) -> List[str]:
         .unique()
         .tolist())
 
+
 @data(1)
 def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     """Calculate death counts, total counts, and at-risk counts at each unique event time.
@@ -126,9 +154,20 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     time_column = kwargs.get("time_column", "T")
     unique_event_times = kwargs.get("unique_event_times")
     censor_column = kwargs.get("censor_column", "C")
+    binning = kwargs.get("binning")
     cohort_id = kwargs.get("cohort_id")
 
-    # filter the local dataframe with the query
+    # Apply binning to obfuscate event times
+    if binning:
+        # Bin event time data
+        info('Binning event times to compute tables')
+        df[time_column] = np.float64(pd.cut(
+            df[time_column], bins=unique_event_times,
+            labels=unique_event_times[1:]
+        ))
+    
+
+    # Filter the local dataframe with the query
     info(f"Overall number of patients: {df.shape[0]}")
     df = df.query(f"COHORT_DEFINITION_ID == {cohort_id}")
     info(f"Number of patients in the cohort #{cohort_id}: {df.shape[0]}")
