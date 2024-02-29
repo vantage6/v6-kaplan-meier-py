@@ -110,3 +110,33 @@ Be mindful that any domain-specific preprocessing, such as adjusting time units 
 
 Follow these specifications to prepare your data correctly for a federated analysis with the Kaplan-Meier algorithm on vantage6.
 
+
+## Output Interpretation
+
+The Kaplan-Meier curve calculation returns a DataFrame with the following columns, including their data types and descriptions:
+
+| Column Name                 | Dtype          | Description                                                                     |
+|-----------------------------|----------------|---------------------------------------------------------------------------------|
+| `<time_column_name>`        | Numeric (float or int) | Timestamps of the events or censored data, based on the provided time data.     |
+| `removed`                   | Integer        | Number of subjects removed from the risk set in each time interval.             |
+| `observed`                  | Integer        | Observed number of events of interest (e.g., death or failure) at each timestamp.|
+| `censored`                  | Integer        | Number of subjects censored at each timestamp.                                  |
+| `at_risk`                   | Integer        | Number of individuals at risk at each timestamp.                                |
+| `hazard`                    | Float          | Hazard rate at each timestamp, calculated as `observed / at_risk`.              |
+| `survival_cdf`              | Float          | Cumulative survival probability up to and including each timestamp.              |
+
+* Replace `<time_column_name>` with the column name you specified in the input configuration for the time data.
+
+### How to Interpret the Output:
+
+- `<time_column_name>` shows each recorded or estimated event/censoring timestamp, which is not an interval but discrete points in time.
+
+- `observed` provides the count of events that occurred, while `censored` shows how many subjects' data did not reach an event by the end of observation.
+
+- `at_risk` is critical as it denotes the number of subjects that could potentially experience the event at each timestamp.
+
+- The `hazard` rate gives an indication of the instant risk of event occurrence over time.
+
+- `survival_cdf` is the key metric representing the estimated probability of surviving beyond each timestamp in `<time_column_name>`.
+
+The analysis is commonly graphed as the Kaplan-Meier curve plotting `survival_cdf` versus `<time_column_name>` to depict survival trends over time. Periods with a high `censored` count should be carefully interpreted, as they may affect the accuracy of the survival analysis.
