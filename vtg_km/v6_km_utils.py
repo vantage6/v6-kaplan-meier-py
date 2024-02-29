@@ -41,8 +41,8 @@ def calculate_km(
     if bin_size:
         info('Binning unique times')
         unique_event_times = list(range(
-                0, int(np.max(list(unique_event_times))) + bin_size, bin_size
-            ))
+            0, int(max(unique_event_times)) + bin_size, bin_size
+        ))
 
     info('Collecting local event tables')
     method_kwargs = dict(
@@ -51,7 +51,6 @@ def calculate_km(
         censor_column_name=censor_column_name,
         bin_size=bin_size,
         query_string=query_string)
-    info(f"{method_kwargs}")
     method = 'get_km_event_table'
     local_event_tables = launch_subtask(client, method, ids, **method_kwargs)
     local_event_tables = [pd.read_json(event_table) for event_table in local_event_tables]
@@ -59,7 +58,7 @@ def calculate_km(
 
     info('Aggregating event tables')
     km = pd.concat(local_event_tables).groupby(time_column_name, as_index=False).sum()
-    km['hazard'] = km['deaths'] / km['at_risk']
+    km['hazard'] = km['observed'] / km['at_risk']
     km['survival_cdf'] = (1 - km['hazard']).cumprod()
     info('Kaplan-Meier curve has been computed successfully')
     return km
@@ -122,17 +121,28 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
             df[time_column_name], bins=unique_event_times,
             labels=unique_event_times[1:]
         ))
+        df[time_column_name].fillna(0, inplace=True)
 
     # Group by the time column, aggregating both death and total counts simultaneously
     km_df = (
         df
         .groupby(time_column_name)
-        .agg(deaths=(censor_column_name, 'sum'), total=(censor_column_name, 'count'))
-        .reset_index()
+        .agg(
+            removed=(censor_column_name, 'count'),
+            observed=(censor_column_name, 'sum')
         )
+        .reset_index()
+    )
+    km_df['censored'] = km_df['removed'] - km_df['observed']
+
+    # Make sure all global times are available
+    km_df = pd.merge(
+        pd.DataFrame({time_column_name: unique_event_times}), km_df,
+        on=time_column_name, how='left'
+    ).fillna(0)
 
     # Calculate "at-risk" counts at each unique event time
-    km_df['at_risk'] = km_df['total'].iloc[::-1].cumsum().iloc[::-1]
+    km_df['at_risk'] = km_df['removed'].iloc[::-1].cumsum().iloc[::-1]
 
     # Convert DataFrame to JSON
     return km_df.to_json()
