@@ -6,6 +6,7 @@ The algorithm operates within the vantage6 infrastructure, a platform supporting
 
 Follow the instructions in subsequent sections to set up and execute the federated Kaplan-Meier analysis.
 
+
 ## Usage
 
 This section provides a comprehensive guide on how to use the repository to perform federated Kaplan-Meier analysis, from initializing the client to executing the task and retrieving the results.
@@ -72,3 +73,40 @@ Provide actual values for the `collaboration`, `organizations`, `name`, `image`,
 5. **Monitor and Retrieve Results**: Utilize the vantage6 client methods to check the status of the task and retrieve the results when the task is complete.
 
 Ensure all prerequisites are met and configurations are set by referring to the 'Installation and Setup' section before proceeding with the above steps.
+
+
+## Data Format and Preprocessing
+
+To ensure successful Kaplan-Meier curve calculation, databases at each node need to be structured with the necessary columns:
+
+- `time_column_name`: Indicates the time from the start point (e.g., diagnosis) to either an event of interest (e.g., death) or right censoring. Should be of a numeric dtype (integer or float).
+  
+- `censor_column_name`: A binary column indicating whether the event of interest occurred (1) or if the data was censored (0). Needs to be of integer dtype.
+  
+Optionally, a `patient_id` column can be included as a unique identifier for each subject, but it is not required for the analysis.
+
+### Sample Table Structure:
+
+| Column Name           | Description                                       | Dtype   | Required |
+|-----------------------|---------------------------------------------------|---------|----------|
+| patient_id            | Unique identifier for each patient (optional)     | String  | No       |
+| time_to_event         | Duration until event of interest or censoring     | Numeric | Yes      |
+| event_occurred        | Event occurrence indicator (1: yes, 0: no)        | Integer | Yes      |
+| additional_column1    | Description of optional additional data           | ...     | No       |
+| additional_column2    | Description of optional additional data           | ...     | No       |
+| ...                   | ...                                               | ...     | ...      |
+
+`time_to_event` refers to your `time_column_name` and `event_occurred` to your `censor_column_name`, as defined in the input parameters of the algorithm.
+
+### Preprocessing Steps:
+
+1. Confirm no missing values in numeric columns like `time_column_name`. Handle any missing data through imputation or exclusion before proceeding.
+
+2. Ensure `censor_column_name` is binary (containing only 0s and 1s) and of integer dtype.
+
+3. Perform any necessary data cleaning, normalization, or datatype conversion on additional columns according to the specifics of your study and requirements for the analysis.
+
+Be mindful that any domain-specific preprocessing, such as adjusting time units or categorizing features, should be completed prior to analysis.
+
+Follow these specifications to prepare your data correctly for a federated analysis with the Kaplan-Meier algorithm on vantage6.
+
