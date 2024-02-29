@@ -40,11 +40,9 @@ def calculate_km(
     # Apply binning to obfuscate event times
     if bin_size:
         info('Binning unique times')
-        info(f'Unique event times {unique_event_times}')
         unique_event_times = list(range(
             0, int(max(unique_event_times)) + bin_size, bin_size
         ))
-        info(f'Unique event times {unique_event_times}')
 
     info('Collecting local event tables')
     method_kwargs = dict(
@@ -53,7 +51,6 @@ def calculate_km(
         censor_column_name=censor_column_name,
         bin_size=bin_size,
         query_string=query_string)
-    info(f"{method_kwargs}")
     method = 'get_km_event_table'
     local_event_tables = launch_subtask(client, method, ids, **method_kwargs)
     local_event_tables = [pd.read_json(event_table) for event_table in local_event_tables]
