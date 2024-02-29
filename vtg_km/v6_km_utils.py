@@ -135,11 +135,12 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
     )
     km_df['censored'] = km_df['removed'] - km_df['observed']
 
-    # Make sure all global times are available
+    # Make sure all global times are available and sort it by time
     km_df = pd.merge(
         pd.DataFrame({time_column_name: unique_event_times}), km_df,
         on=time_column_name, how='left'
     ).fillna(0)
+    km_df.sort_values(by=time_column_name, inplace=True)
 
     # Calculate "at-risk" counts at each unique event time
     km_df['at_risk'] = km_df['removed'].iloc[::-1].cumsum().iloc[::-1]
