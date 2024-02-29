@@ -124,6 +124,7 @@ def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
             df[time_column_name], bins=unique_event_times,
             labels=unique_event_times[1:]
         ))
+        df[time_column_name].fillna(0, inplace=True)
 
     # Group by the time column, aggregating both death and total counts simultaneously
     km_df = (

@@ -36,7 +36,7 @@ average_task = client.task.create(
             'query_string': 'COHORT_DEFINITION_ID == 1029'
         }
     },
-    organizations=org_ids
+    organizations=[org_ids[0]]
 )
 
 results = client.result.get(average_task.get("id"))
