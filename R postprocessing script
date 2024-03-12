@@ -1,0 +1,212 @@
+require(dplyr)
+require(magrittr)
+require(ggplot2)
+require(ggpubr)
+
+survival_1029 <- read.csv("C://Users/U1103123/OneDrive - IQVIA/all_centers_cohort_1029.csv") %>%
+  mutate(cohort_id=1029)
+survival_1030 <- read.csv("C://Users/U1103123/OneDrive - IQVIA/all_centers_cohort_1030.csv") %>%
+  mutate(cohort_id=1030)
+survival_1031 <- read.csv("C://Users/U1103123/OneDrive - IQVIA/all_centers_cohort_1031.csv") %>%
+  mutate(cohort_id=1031)
+survival_1032 <- read.csv("C://Users/U1103123/OneDrive - IQVIA/all_centers_cohort_1032.csv") %>%
+  mutate(cohort_id=1032)
+survival_1033 <- read.csv("C://Users/U1103123/OneDrive - IQVIA/all_centers_cohort_1033.csv") %>%
+  mutate(cohort_id=1033)
+survival_1034 <- read.csv("C://Users/U1103123/OneDrive - IQVIA/all_centers_cohort_1034.csv") %>%
+  mutate(cohort_id=1034)
+survival_1035 <- read.csv("C://Users/U1103123/OneDrive - IQVIA/all_centers_cohort_1035.csv") %>%
+  mutate(cohort_id=1035)
+survival_1036 <- read.csv("C://Users/U1103123/OneDrive - IQVIA/all_centers_cohort_1036.csv") %>%
+  mutate(cohort_id=1036)
+survival_1037 <- read.csv("C://Users/U1103123/OneDrive - IQVIA/all_centers_cohort_1037.csv") %>%
+  mutate(cohort_id=1037)
+survival_1038 <- read.csv("C://Users/U1103123/OneDrive - IQVIA/all_centers_cohort_1038.csv") %>%
+  mutate(cohort_id=1038)
+
+
+
+survival_cohort <- rbind(survival_1029, survival_1030, survival_1031, survival_1032, survival_1033,
+                         survival_1034, survival_1035, survival_1036, survival_1037, survival_1038)
+
+
+survival <- survival_cohort %>%
+  ##change cohort_id here for all cases
+  group_by(cohort_id) %>%
+  mutate(limit_1=(at_risk*(at_risk-observed))) %>%
+  mutate(limit_1a=(observed/limit_1)) %>%
+  mutate(limit2=cumsum(limit_1a)) %>%
+  mutate(limit3=survival_cdf*sqrt(limit2)) %>%
+  mutate(upper_limit=survival_cdf+(1.96*limit3)) %>%
+  mutate(lower_limit=survival_cdf-(1.96*limit3)) %>%
+  ungroup()
+
+mylist <- split(survival, survival$cohort_id)
+
+##need to redo, worked when datasets were same length i.e. comparison of sites
+expected <- cbind(Data1=mylist[[1]], Data2=mylist[[2]]) %>%
+  mutate(dj=Data1.observed+Data2.observed) %>%
+  mutate(nj=Data1.at_risk+Data2.at_risk) %>%
+  mutate(e1=Data1.at_risk*(dj/nj)) %>%
+  mutate(e2=Data2.at_risk*(dj/nj)) 
+
+
+##log rank for two groups. Expect need to use more complicated equation. Need to rework
+log_rank <- expected %>%
+  select(Data1.observed, Data2.observed, dj, nj, e1, e2) %>%
+  summarise(obs1=sum(Data1.observed), exp1=sum(e1), obs2=sum(Data2.observed), exp2=sum(e2)) %>%
+  mutate(chi_sq=(((obs1-exp1)^2)/exp1) +(((obs2-exp2)^2)/exp2)) %>%
+  mutate(p=pchisq(chi_sq, 1, lower.tail = FALSE))
+
+survival_censored <- survival %>%
+  filter(at_risk>10) %>%
+  mutate(cohort_id=(as.factor(cohort_id)))
+
+mets <- survival_censored %>%
+  filter(cohort_id %in% c(1029, 1030, 1031, 1032, 1033, 1034, 1035, 1036, 1037, 1038)) %>%
+  mutate(cohort_id=recode(cohort_id, "1029" = "mNSCLC all",
+                       "1030" = "Brain mets only",
+                       "1031" = "Liver mets only",
+                       "1032" = "Adrenal gland mets only",
+                       "1033" = "Bone mets only",
+                       "1034" = "Lung mets only",
+                       "1035" = "Other",
+                       "1036" = "Multiple sites with brain mets",
+                       "1037" = "Multiple sites without brain mets",
+                       "1038" = "Mets unknown site"
+  )
+  ) %>%
+  mutate(censored_flag=case_when(censored==0 ~ NA,
+                                 TRUE ~ 1))
+
+mets_plot <- ggplot(data = mets, mapping=(aes(x = TIME_AT_RISK, y=survival_cdf, color=cohort_id))) + 
+  geom_step(size=1) +
+  stat_stepribbon(aes(TIME_AT_RISK, ymax=`upper_limit`, ymin=`lower_limit`, fill=cohort_id, color=cohort_id, alpha=0.2)) +
+  
+  guides(color=guide_legend(override.aes=list(fill=NA))) +
+  
+  guides(alpha = "none") +
+  
+  ##remove if plot looks rubbish, looks good for Maastrict
+  geom_point(data = dplyr::filter(mets, censored_flag==1), aes( x = TIME_AT_RISK, y = survival_cdf, shape=as.factor(censored_flag), color=cohort_id)) +
+  
+  
+  theme_classic() +
+  
+  labs(x = "Time (days)") +
+  labs(y = "Survival Probability") +
+  scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0)) +
+  scale_shape_manual(values=("1"=3),  guide="none")
+
+
+
+pop_table <- mets %>%
+  group_by(cohort_id) %>%
+  summarise(Number_of_patients=max(at_risk), Number_of_deaths=sum(observed), Number_censored=sum(censored)) %>%
+  select(cohort_id, Number_of_patients, Number_of_deaths, Number_censored) %>%
+  pivot_longer(cols=c(-cohort_id),names_to="Variable")%>%
+  pivot_wider(names_from=c(cohort_id)) %>%
+  mutate(Identifier="Total")
+
+median_survival <- mets %>%
+filter(survival_cdf<=0.50) %>%
+group_by(cohort_id) %>%
+select(cohort_id, TIME_AT_RISK, survival_cdf) %>%
+  filter(row_number()==1) %>%
+  pivot_longer(cols=c(-cohort_id),names_to="Variable")%>%
+  pivot_wider(names_from=c(cohort_id)) %>%
+  filter(Variable!="survival_cdf") %>%
+  mutate(Variable="Median Survival") %>%
+  mutate(Identifier="Total")
+
+Q1_survival <- mets %>%
+  filter(survival_cdf<=0.75) %>%
+  group_by(cohort_id) %>%
+  select(cohort_id, TIME_AT_RISK, survival_cdf) %>%
+  filter(row_number()==1) %>%
+  pivot_longer(cols=c(-cohort_id),names_to="Variable")%>%
+  pivot_wider(names_from=c(cohort_id)) %>%
+  filter(Variable!="survival_cdf") %>%
+  mutate(Variable="Q1") %>%
+  mutate(Identifier="Total")
+
+##need solution if not reached
+Q3_survival <- mets %>%
+  filter(survival_cdf<=0.25) %>%
+  group_by(cohort_id) %>%
+  select(cohort_id, TIME_AT_RISK, survival_cdf) %>%
+  filter(row_number()==1) %>%
+  pivot_longer(cols=c(-cohort_id),names_to="Variable")%>%
+  pivot_wider(names_from=c(cohort_id)) %>%
+  filter(Variable!="survival_cdf") %>%
+  mutate(Variable="Q3") %>%
+  mutate(Identifier="Total") %>%
+  mutate(`Liver mets only` =NA) %>%
+  mutate(`Lung mets only` = NA)
+
+
+six_months <- mets %>%
+  filter(TIME_AT_RISK>=182.625) %>%
+  group_by(cohort_id) %>%
+  select(cohort_id, at_risk, survival_cdf, lower_limit, upper_limit) %>%
+  filter(row_number()==1) %>%
+  pivot_longer(cols=c(-cohort_id),names_to="Variable")%>%
+  pivot_wider(names_from=c(cohort_id)) %>%
+  mutate(Identifier="6 months") %>%
+  mutate(`Liver mets only` = NA)
+  
+twelve_months <- mets %>%
+  filter(TIME_AT_RISK>=365.25) %>%
+  group_by(cohort_id) %>%
+  select(cohort_id, at_risk, survival_cdf, lower_limit, upper_limit) %>%
+  filter(row_number()==1) %>%
+  pivot_longer(cols=c(-cohort_id),names_to="Variable")%>%
+  pivot_wider(names_from=c(cohort_id)) %>%
+  mutate(Identifier="12 months") %>%
+  mutate(`Liver mets only` = NA)
+
+eighteen_months <- mets %>%
+  filter(TIME_AT_RISK>=547.875) %>%
+  group_by(cohort_id) %>%
+  select(cohort_id, at_risk, survival_cdf, lower_limit, upper_limit) %>%
+  filter(row_number()==1) %>%
+  pivot_longer(cols=c(-cohort_id),names_to="Variable")%>%
+  pivot_wider(names_from=c(cohort_id))  %>%
+  mutate(Identifier="18 months") %>%
+  mutate(`Liver mets only` = NA)
+
+twenty_four_months <- mets %>%
+  filter(TIME_AT_RISK>=730.5) %>%
+  group_by(cohort_id) %>%
+  select(cohort_id, at_risk, survival_cdf, lower_limit, upper_limit) %>%
+  filter(row_number()==1) %>%
+  pivot_longer(cols=c(-cohort_id),names_to="Variable")%>%
+  pivot_wider(names_from=c(cohort_id))  %>%
+  mutate(Identifier="24 months") %>%
+  mutate(`Liver mets only` = NA) %>%
+  mutate(`Bone mets only` = NA)
+
+table1 <- rbind(pop_table, median_survival, Q1_survival, Q3_survival, six_months, twelve_months, eighteen_months, twenty_four_months) %>%
+  select(Identifier, everything()) %>%
+  ##deprecated redo
+  mutate(across(where(is.numeric), round, 2))
+
+at_risk <- mets %>%
+  group_by(cohort_id) %>%
+  mutate(time_period=case_when(TIME_AT_RISK>=182.625  & TIME_AT_RISK<365.25 ~ 1,
+                              TIME_AT_RISK>=365.25 & TIME_AT_RISK<547.875 ~ 2,
+                              TIME_AT_RISK>=547.875 & TIME_AT_RISK<730.5 ~ 3,
+                              TIME_AT_RISK>=730.5 ~ 4,
+                              TRUE ~ 0)) %>%
+  group_by(cohort_id, time_period) %>%
+  filter(row_number()==1)
+  
+tbl_fct <- 
+  ggplot(at_risk, aes(TIME_AT_RISK, cohort_id)) + 
+  geom_text(aes(label = at_risk)) +
+  labs(x = "Time (days)") +
+  xlim(0,1000) +
+  theme_classic()
+
+figure <- ggpubr::ggarrange(mets_plot, tbl_fct, heights = c(2, 0.7), 
+                    ncol = 1, nrow = 2)
