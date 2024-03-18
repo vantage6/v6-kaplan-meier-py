@@ -16,3 +16,6 @@ TODO
   * Created issue: https://github.com/vantage6/vantage6/issues/1105
 * Multi party computation + homomorphic encryption
 :small_red_triangle_down:: Higher priority
+* Noise:
+  * What's a good statistical test to feel comfortable noise is not compromising results?
+  * To consider: noise based on variance?
