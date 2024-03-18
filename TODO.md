@@ -1,0 +1,16 @@
+TODO
+====
+
+* :small_red_triangle_down: Do noising in SQL script?
+* :small_red_triangle_down: Enforce minimum number of nodes
+* :small_red_triangle_down: Enforce exclusive partial task executor
+* :small_red_triangle_down: Remove `query` feature
+* Refactor to single task (i.e. not collecting unique times first)
+* Documentation update
+* :small_red_triangle_down: Check for correctness by adding unit tests
+* :small_red_triangle_down: Nodes: add hash to your algorithm policies
+* Allow for restricting which (algorihm) functions are allowed on a node
+* How do we deal with filtering by a column (COHORT_ID)
+* :small_red_triangle_down: Log in nodes printing too much (disclosing parameters/data sent by researcher)
+
+:small_red_triangle_down:: Higher priority
