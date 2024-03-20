@@ -6,6 +6,43 @@ from vantage6.algorithm.tools.util import info
 from vantage6.algorithm.tools.decorators import data
 
 
+def aggregate_unique_event_times(
+        client: AlgorithmClient,
+        ids: List[int],
+        time_column_name: str,
+        bin_size: int = None,
+        query_string: str = None
+) -> List[int]:
+    """Calculate Kaplan-Meier curve and local event tables.
+
+    Parameters:
+    - client: Vantage6 client object
+    - ids: List of organization IDs
+    - time_column_name: Name of the column representing time
+    - bin_size: Simple KM or use binning to obfuscate events
+
+    Returns:
+    - List containing unique event times
+    """
+    method_kwargs = dict(
+        time_column_name=time_column_name,
+        query_string=query_string)
+    method = 'get_unique_event_times'
+    local_unique_event_times_aggregated = launch_subtask(client, method, ids, **method_kwargs)
+    unique_event_times = {0}
+    for local_unique_event_times in local_unique_event_times_aggregated:
+        unique_event_times |= set(local_unique_event_times)
+    info(f'Collected unique event times for {len(local_unique_event_times_aggregated)} organization(s)')
+
+    # Apply binning to obfuscate event times
+    if bin_size:
+        info('Binning unique times')
+        unique_event_times = list(range(
+            0, int(max(unique_event_times)) + bin_size, bin_size
+        ))
+    return unique_event_times
+
+
 def calculate_km(
     client: AlgorithmClient,
     ids: List[int],
@@ -27,22 +64,9 @@ def calculate_km(
     - Tuple containing Kaplan-Meier curve (DataFrame) and local event tables (list of DataFrames)
     """
     info('Collecting unique event times')
-    method_kwargs = dict(
-        time_column_name=time_column_name,
-        query_string=query_string)
-    method = 'get_unique_event_times'
-    local_unique_event_times_aggregated = launch_subtask(client, method, ids, **method_kwargs)
-    unique_event_times = {0}
-    for local_unique_event_times in local_unique_event_times_aggregated:
-        unique_event_times |= set(local_unique_event_times)
-    info(f'Collected unique event times for {len(local_unique_event_times_aggregated)} organization(s)')
-
-    # Apply binning to obfuscate event times
-    if bin_size:
-        info('Binning unique times')
-        unique_event_times = list(range(
-            0, int(max(unique_event_times)) + bin_size, bin_size
-        ))
+    unique_event_times = aggregate_unique_event_times(
+        client, ids, time_column_name, bin_size, query_string
+    )
 
     info('Collecting local event tables')
     method_kwargs = dict(
