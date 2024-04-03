@@ -46,19 +46,28 @@ local_events_tables = launch_subtask(
     client, method, org_ids, **method_kwargs
 )
 
+# Computing global table
+local_events_tables = [
+    pd.read_json(StringIO(event_table)) for event_table in local_events_tables
+]
+km = (pd.concat(local_events_tables)
+        .groupby(time_column_name,as_index=False)
+        .sum()
+     )
+
 
 class TestFederatedKaplanMeier:
     def test_global_unique_times_are_unique(self):
         assert len(unique_event_times) == len(set(unique_event_times))
 
     def test_local_unique_times_ordered(self):
-        local_events_table = pd.read_json(StringIO(local_events_tables[0]))
-        times = local_events_table[time_column_name].values.tolist()
+        times = local_events_tables[0][time_column_name].values.tolist()
         assert times == sorted(times)
 
-    # def test_global_unique_times_ordered(self):
-    #     assert result is True
-    #
+    def test_global_unique_times_ordered(self):
+        times = km[time_column_name].values.tolist()
+        assert times == sorted(times)
+
     # def test_binning_unique_times(self):
     #     assert sum(rows) == 3
     #
