@@ -3,10 +3,16 @@
 """ Unit tests for federated Kaplan-Meier algorithm
 """
 import os
+import pandas as pd
+from io import StringIO
 from vantage6.algorithm.tools.mock_client import MockAlgorithmClient
 from vtg_km.v6_km_utils import aggregate_unique_event_times
+from vtg_km.v6_km_utils import launch_subtask
 
 
+# TODO: is it possible to check each function directly? Not sure what to do
+#  about the decorators on top of the functions... Current implementation of
+#  the unit tests are very ugly!
 # Setting up mock client for testing purposes
 data_path = os.path.join(os.getcwd(), 'vtg_km', 'local')
 data1 = {'database': os.path.join(data_path, 'data1.csv'), 'db_type': 'csv'}
@@ -18,16 +24,18 @@ client = MockAlgorithmClient(
     module='vtg_km'
 )
 
+# Computing unique global times
+time_column_name = 'TIME_AT_RISK'
+bin_size = None
+query_string = 'COHORT_DEFINITION_ID == 1029'
+unique_event_times = aggregate_unique_event_times(
+    client, org_ids, time_column_name, bin_size, query_string
+)
+
 
 class TestFederatedKaplanMeier:
     def test_global_unique_times_are_unique(self):
-        time_column_name = 'TIME_AT_RISK'
-        bin_size = None
-        query_string = 'COHORT_DEFINITION_ID == 1029'
-        unique_event_times = aggregate_unique_event_times(
-            client, org_ids, time_column_name, bin_size, query_string
-        )
-        assert len(set(unique_event_times)) == len(unique_event_times)
+        assert len(unique_event_times) == len(set(unique_event_times))
 
     # def test_global_unique_times_ordered(self):
     #     assert result is True
