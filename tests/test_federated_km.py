@@ -100,6 +100,9 @@ class TestFederatedKaplanMeier:
     def test_compare_observed_events_with_centralised(self):
         assert km['observed'].values.tolist() == kmc['observed'].values.tolist()
 
+    def test_compare_censored_events_with_centralised(self):
+        assert km['censored'].values.tolist() == kmc['censored'].values.tolist()
+
     # def test_equivalence_with_centralised(self):
     #     assert result is True
     # def test_binning_unique_times(self):
