@@ -32,10 +32,29 @@ unique_event_times = aggregate_unique_event_times(
     client, org_ids, time_column_name, bin_size, query_string
 )
 
+# Computing local tables
+censor_column_name = 'MORTALITY_FLAG'
+method_kwargs = dict(
+    time_column_name=time_column_name,
+    unique_event_times=list(unique_event_times),
+    censor_column_name=censor_column_name,
+    bin_size=bin_size,
+    query_string=query_string
+)
+method = 'get_km_event_table'
+local_events_tables = launch_subtask(
+    client, method, org_ids, **method_kwargs
+)
+
 
 class TestFederatedKaplanMeier:
     def test_global_unique_times_are_unique(self):
         assert len(unique_event_times) == len(set(unique_event_times))
+
+    def test_local_unique_times_ordered(self):
+        local_events_table = pd.read_json(StringIO(local_events_tables[0]))
+        times = local_events_table[time_column_name].values.tolist()
+        assert times == sorted(times)
 
     # def test_global_unique_times_ordered(self):
     #     assert result is True
