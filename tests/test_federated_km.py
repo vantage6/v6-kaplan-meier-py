@@ -74,11 +74,13 @@ class TestFederatedKaplanMeier:
         times = km[time_column_name].values.tolist()
         assert times == sorted(times)
 
+    def test_size_local_event_tables(self):
+        assert np.all(
+            [len(local_table) == len(km) for local_table in local_events_tables]
+        )
+
     # def test_binning_unique_times(self):
     #     assert sum(rows) == 3
-    #
-    # def test_size_local_event_tables(self):
-    #     assert sum(cols) == 3
     #
     # def test_size_local_event_tables_with_binning(self):
     #     assert sum(cols) == 3
