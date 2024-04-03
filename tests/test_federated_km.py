@@ -97,6 +97,9 @@ class TestFederatedKaplanMeier:
     def test_compare_at_risk_with_centralised(self):
         assert km['at_risk'].values.tolist() == kmc['at_risk'].values.tolist()
 
+    def test_compare_observed_events_with_centralised(self):
+        assert km['observed'].values.tolist() == kmc['observed'].values.tolist()
+
     # def test_equivalence_with_centralised(self):
     #     assert result is True
     # def test_binning_unique_times(self):
