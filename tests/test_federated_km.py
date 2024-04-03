@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from io import StringIO
+from lifelines import KaplanMeierFitter
 from vantage6.algorithm.tools.mock_client import MockAlgorithmClient
 from vtg_km.v6_km_utils import aggregate_unique_event_times
 from vtg_km.v6_km_utils import launch_subtask
@@ -18,8 +19,10 @@ from vtg_km.v6_km_utils import launch_subtask
 #  the unit tests are very ugly!
 # Setting up mock client for testing purposes
 data_path = os.path.join(os.getcwd(), 'vtg_km', 'local')
-data1 = {'database': os.path.join(data_path, 'data1.csv'), 'db_type': 'csv'}
-data2 = {'database': os.path.join(data_path, 'data2.csv'), 'db_type': 'csv'}
+data_path1 = os.path.join(data_path, 'data1.csv')
+data_path2 = os.path.join(data_path, 'data2.csv')
+data1 = {'database': data_path1, 'db_type': 'csv'}
+data2 = {'database': data_path2, 'db_type': 'csv'}
 org_ids = [0, 1]
 client = MockAlgorithmClient(
     datasets=[[data1], [data2]],
@@ -58,6 +61,18 @@ km = (pd.concat(local_events_tables)
         .sum()
      )
 
+# Centralised solution
+df1 = pd.read_csv(data_path1)
+df2 = pd.read_csv(data_path2)
+df = df1._append(df2, ignore_index=True)
+df = df.query(query_string)
+kmf = KaplanMeierFitter()
+kmf.fit(
+    list(df[time_column_name].values),
+    event_observed=list(df[censor_column_name].values)
+)
+kmc = kmf.event_table
+
 
 class TestFederatedKaplanMeier:
     def test_global_unique_times_are_unique(self):
@@ -79,6 +94,11 @@ class TestFederatedKaplanMeier:
             [len(local_table) == len(km) for local_table in local_events_tables]
         )
 
+    def test_compare_at_risk_with_centralised(self):
+        assert km['at_risk'].values.tolist() == kmc['at_risk'].values.tolist()
+
+    # def test_equivalence_with_centralised(self):
+    #     assert result is True
     # def test_binning_unique_times(self):
     #     assert sum(rows) == 3
     #
@@ -95,13 +115,4 @@ class TestFederatedKaplanMeier:
     #     assert result is True
     #
     # def test_presence_nan_values_local_tables(self):
-    #     assert result is True
-    #
-    # def test_total_patients_t_zero(self):
-    #     assert result is True
-    #
-    # def test_total_patients_final_t(self):
-    #     assert result is True
-    #
-    # def test_equivalence_with_centralised(self):
     #     assert result is True
