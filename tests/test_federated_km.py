@@ -3,7 +3,10 @@
 """ Unit tests for federated Kaplan-Meier algorithm
 """
 import os
+
+import numpy as np
 import pandas as pd
+
 from io import StringIO
 from vantage6.algorithm.tools.mock_client import MockAlgorithmClient
 from vtg_km.v6_km_utils import aggregate_unique_event_times
@@ -61,8 +64,11 @@ class TestFederatedKaplanMeier:
         assert len(unique_event_times) == len(set(unique_event_times))
 
     def test_local_unique_times_ordered(self):
-        times = local_events_tables[0][time_column_name].values.tolist()
-        assert times == sorted(times)
+        local_times = [
+            local_table[time_column_name].values.tolist()
+            for local_table in local_events_tables
+        ]
+        assert np.all([times == sorted(times) for times in local_times])
 
     def test_global_unique_times_ordered(self):
         times = km[time_column_name].values.tolist()
