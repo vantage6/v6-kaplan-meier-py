@@ -21,11 +21,13 @@ from vtg_km.v6_km_utils import launch_subtask
 data_path = os.path.join(os.getcwd(), 'vtg_km', 'local')
 data_path1 = os.path.join(data_path, 'data1.csv')
 data_path2 = os.path.join(data_path, 'data2.csv')
+data_path3 = os.path.join(data_path, 'data3.csv')
 data1 = {'database': data_path1, 'db_type': 'csv'}
 data2 = {'database': data_path2, 'db_type': 'csv'}
-org_ids = [0, 1]
+data3 = {'database': data_path3, 'db_type': 'csv'}
+org_ids = [0, 1, 2]
 client = MockAlgorithmClient(
-    datasets=[[data1], [data2]],
+    datasets=[[data1], [data2], [data3]],
     organization_ids=org_ids,
     module='vtg_km'
 )
@@ -64,7 +66,9 @@ km = (pd.concat(local_events_tables)
 # Centralised solution
 df1 = pd.read_csv(data_path1)
 df2 = pd.read_csv(data_path2)
+df3 = pd.read_csv(data_path3)
 df = df1._append(df2, ignore_index=True)
+df = df._append(df3, ignore_index=True)
 df = df.query(query_string)
 kmf = KaplanMeierFitter()
 kmf.fit(
@@ -103,22 +107,8 @@ class TestFederatedKaplanMeier:
     def test_compare_censored_events_with_centralised(self):
         assert km['censored'].values.tolist() == kmc['censored'].values.tolist()
 
-    # def test_equivalence_with_centralised(self):
-    #     assert result is True
     # def test_binning_unique_times(self):
     #     assert sum(rows) == 3
     #
     # def test_size_local_event_tables_with_binning(self):
     #     assert sum(cols) == 3
-    #
-    # def test_incorrect_data_types(self):
-    #     assert result is True
-    #
-    # def test_validity_censor_column(self):
-    #     assert result is True
-    #
-    # def test_presence_nan_values_input_data(self):
-    #     assert result is True
-    #
-    # def test_presence_nan_values_local_tables(self):
-    #     assert result is True
