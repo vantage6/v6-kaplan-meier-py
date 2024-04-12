@@ -9,7 +9,7 @@ from vtg_km.v6_km_utils import launch_subtask
 
 def get_federated_solution(
         data_paths: list, query_string: str, time_column_name: str,
-        censor_column_name: str, bin_size: int
+        censor_column_name: str, bin_size: int = None
 ) -> Tuple[List[int], List[pd.DataFrame], pd.DataFrame]:
     """ Federated solution for Kaplan-Meier to be used for unit testing
 
