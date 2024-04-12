@@ -34,7 +34,7 @@ def get_federated_solution(
         datasets.append([data])
 
     # Setting up mock client for testing purposes
-    org_ids = [0, 1, 2]
+    org_ids = [i for i in range(len(datasets))]
     client = MockAlgorithmClient(
         datasets=datasets,
         organization_ids=org_ids,
