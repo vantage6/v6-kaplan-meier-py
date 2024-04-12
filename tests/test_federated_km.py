@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 
 from io import StringIO
-from lifelines import KaplanMeierFitter
 from vantage6.algorithm.tools.mock_client import MockAlgorithmClient
+from tests.centralised_solution import get_centralised_solution
 from vtg_km.v6_km_utils import aggregate_unique_event_times
 from vtg_km.v6_km_utils import launch_subtask
 
@@ -19,6 +19,9 @@ from vtg_km.v6_km_utils import launch_subtask
 #  the unit tests are very ugly!
 # Setting up mock client for testing purposes
 data_path = os.path.join(os.getcwd(), 'vtg_km', 'local')
+data_paths = []
+for i in range(1, 4):
+    data_paths.append(os.path.join(data_path, f'data{i}.csv'))
 data_path1 = os.path.join(data_path, 'data1.csv')
 data_path2 = os.path.join(data_path, 'data2.csv')
 data_path3 = os.path.join(data_path, 'data3.csv')
@@ -63,19 +66,9 @@ km = (pd.concat(local_events_tables)
         .sum()
      )
 
-# Centralised solution
-df1 = pd.read_csv(data_path1)
-df2 = pd.read_csv(data_path2)
-df3 = pd.read_csv(data_path3)
-df = df1._append(df2, ignore_index=True)
-df = df._append(df3, ignore_index=True)
-df = df.query(query_string)
-kmf = KaplanMeierFitter()
-kmf.fit(
-    list(df[time_column_name].values),
-    event_observed=list(df[censor_column_name].values)
+kmc = get_centralised_solution(
+    data_paths, query_string, time_column_name, censor_column_name
 )
-kmc = kmf.event_table
 
 
 class TestFederatedKaplanMeier:
@@ -107,6 +100,11 @@ class TestFederatedKaplanMeier:
     def test_compare_censored_events_with_centralised(self):
         assert km['censored'].values.tolist() == kmc['censored'].values.tolist()
 
+    # TODO: no overlap in the times
+    # TODO: negative times
+    # TODO: wrong format for censor column
+    # TODO: node with empty data
+    # TODO: node with wrong format for data
     # def test_binning_unique_times(self):
     #     assert sum(rows) == 3
     #
