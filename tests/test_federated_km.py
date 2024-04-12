@@ -4,7 +4,7 @@ from config_unit_tests import *
 
 
 class TestFederatedKaplanMeier:
-    """ Unit tests for federated Kaplan-Meier algorithm
+    """ Unit tests for the federated Kaplan-Meier algorithm
     """
     def test_global_unique_times_are_unique(self):
         assert len(unique_event_times) == len(set(unique_event_times))

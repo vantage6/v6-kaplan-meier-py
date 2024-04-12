@@ -9,15 +9,15 @@ def get_centralised_solution(
 ) -> pd.DataFrame:
     """ Centralised solution for Kaplan-Meier to be used for unit testing
 
-    Parameters
-    ----------
-    data_paths: List with data paths for testing data
-    query_string: Data query
-    time_column_name: Name for event time column
-    censor_column_name: Name for censor column
+    Parameters:
 
-    Returns
-    -------
+    - data_paths: List with data paths for testing data
+    - query_string: Data query
+    - time_column_name: Name for event time column
+    - censor_column_name: Name for censor column
+
+    Returns:
+
     - Kaplan-Meier event table obtained with lifelines
     """
 

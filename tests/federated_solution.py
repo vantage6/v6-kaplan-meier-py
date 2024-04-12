@@ -13,18 +13,17 @@ def get_federated_solution(
 ) -> Tuple[List[int], List[pd.DataFrame], pd.DataFrame]:
     """ Federated solution for Kaplan-Meier to be used for unit testing
 
-    Parameters
-    ----------
-    data_paths: List with data paths for testing data
-    query_string: Data query
-    time_column_name: Name for event time column
-    censor_column_name: Name for censor column
-    bin_size: Size of the bin, when None binning method is not used
+    Parameters:
 
-    Returns
-    -------
-    - List with unique event times, list with local events tables, and global
-    events table
+    - data_paths: List with data paths for testing data
+    - query_string: Data query
+    - time_column_name: Name for event time column
+    - censor_column_name: Name for censor column
+    - bin_size: Size of the bin, when None binning method is not used
+
+    Returns:
+
+    - Unique event times, local events tables, and global events table
     """
 
     # Datasets to be used for federated Kaplan-Meier
