@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from config_unit_tests import *
+from .config_unit_tests import *
 
 
 class TestFederatedKaplanMeier:
