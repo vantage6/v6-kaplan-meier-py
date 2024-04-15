@@ -22,7 +22,9 @@ def get_centralised_solution(
     """
 
     # Reading and combining data
-    df = pd.concat([pd.read_csv(path) for path in data_paths], ignore_index=True)
+    df = pd.concat(
+        [pd.read_csv(path) for path in data_paths], ignore_index=True
+    )
 
     # Query data
     df = df.query(query_string)
