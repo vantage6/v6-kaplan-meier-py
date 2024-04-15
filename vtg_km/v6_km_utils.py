@@ -58,7 +58,7 @@ def calculate_km(
     - ids: List of organization IDs
     - time_column_name: Name of the column representing time
     - censor_column_name: Name of the column representing censoring
-    - binning: Simple KM or use binning to obfuscate events
+    - bin_size: Simple KM or use binning to obfuscate events
 
     Returns:
     - Tuple containing Kaplan-Meier curve (DataFrame) and local event tables (list of DataFrames)
