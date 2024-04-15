@@ -2,7 +2,6 @@
 __pycache__/
 *.egg-info/
 __pycache__/
-*.csv
 *.json
 analysis/
 .DS_Store

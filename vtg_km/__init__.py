@@ -1,6 +1,6 @@
 from typing import Dict, List, Union
 from vantage6.algorithm.client import AlgorithmClient
-from vantage6.algorithm.tools.util import info, error
+from vantage6.algorithm.tools.util import info
 from vantage6.algorithm.tools.decorators import algorithm_client
 
 from .v6_km_utils import calculate_km, get_km_event_table, get_unique_event_times

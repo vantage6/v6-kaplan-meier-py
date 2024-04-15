@@ -6,27 +6,24 @@ from vantage6.algorithm.tools.util import info
 from vantage6.algorithm.tools.decorators import data
 
 
-def calculate_km(
-    client: AlgorithmClient,
-    ids: List[int],
-    time_column_name: str,
-    censor_column_name: str,
-    bin_size: int = None,
-    query_string: str = None
-) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
+def aggregate_unique_event_times(
+        client: AlgorithmClient,
+        ids: List[int],
+        time_column_name: str,
+        bin_size: int = None,
+        query_string: str = None
+) -> List[int]:
     """Calculate Kaplan-Meier curve and local event tables.
 
     Parameters:
     - client: Vantage6 client object
     - ids: List of organization IDs
     - time_column_name: Name of the column representing time
-    - censor_column_name: Name of the column representing censoring
-    - binning: Simple KM or use binning to obfuscate events
+    - bin_size: Simple KM or use binning to obfuscate events
 
     Returns:
-    - Tuple containing Kaplan-Meier curve (DataFrame) and local event tables (list of DataFrames)
+    - List containing unique event times
     """
-    info('Collecting unique event times')
     method_kwargs = dict(
         time_column_name=time_column_name,
         query_string=query_string)
@@ -43,6 +40,33 @@ def calculate_km(
         unique_event_times = list(range(
             0, int(max(unique_event_times)) + bin_size, bin_size
         ))
+    return unique_event_times
+
+
+def calculate_km(
+    client: AlgorithmClient,
+    ids: List[int],
+    time_column_name: str,
+    censor_column_name: str,
+    bin_size: int = None,
+    query_string: str = None
+) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
+    """Calculate Kaplan-Meier curve and local event tables.
+
+    Parameters:
+    - client: Vantage6 client object
+    - ids: List of organization IDs
+    - time_column_name: Name of the column representing time
+    - censor_column_name: Name of the column representing censoring
+    - bin_size: Simple KM or use binning to obfuscate events
+
+    Returns:
+    - Tuple containing Kaplan-Meier curve (DataFrame) and local event tables (list of DataFrames)
+    """
+    info('Collecting unique event times')
+    unique_event_times = aggregate_unique_event_times(
+        client, ids, time_column_name, bin_size, query_string
+    )
 
     info('Collecting local event tables')
     method_kwargs = dict(
