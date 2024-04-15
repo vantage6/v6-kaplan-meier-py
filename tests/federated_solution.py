@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
+import os
+
 from io import StringIO
 from typing import List, Tuple
 from vantage6.algorithm.tools.mock_client import MockAlgorithmClient
 from vtg_km.v6_km_utils import aggregate_unique_event_times
 from vtg_km.v6_km_utils import launch_subtask
-
+from .enconding_env_vars import _encode_env_var
 
 def get_federated_solution(
-        data_paths: list, query_string: str, time_column_name: str,
+        data_paths: list, filter_value: str, time_column_name: str,
         censor_column_name: str, bin_size: int = None
 ) -> Tuple[List[int], List[pd.DataFrame], pd.DataFrame]:
     """ Federated solution for Kaplan-Meier to be used for unit testing
@@ -32,6 +34,11 @@ def get_federated_solution(
         data = {'database': data_path, 'db_type': 'csv'}
         datasets.append([data])
 
+    # MockAlgorithmClient does not handle node-side environment variables
+    # so we set them here, to their encoded values
+    os.environ['V6_FILTER_COLUMN'] = _encode_env_var('COHORT_DEFINITION_ID')
+    os.environ['V6_FILTER_VALUES_ALLOWED'] = _encode_env_var('1029')
+
     # Setting up mock client for testing purposes
     org_ids = [i for i in range(len(datasets))]
     client = MockAlgorithmClient(
@@ -42,7 +49,7 @@ def get_federated_solution(
 
     # Computing unique global times
     unique_event_times = aggregate_unique_event_times(
-        client, org_ids, time_column_name, bin_size, query_string
+        client, org_ids, time_column_name, bin_size, filter_value
     )
 
     # Computing local tables
@@ -51,7 +58,7 @@ def get_federated_solution(
         unique_event_times=list(unique_event_times),
         censor_column_name=censor_column_name,
         bin_size=bin_size,
-        query_string=query_string
+        filter_value=filter_value
     )
     method = 'get_km_event_table'
     local_events_tables = launch_subtask(
