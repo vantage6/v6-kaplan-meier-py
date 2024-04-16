@@ -50,7 +50,7 @@ def calculate_km(
     time_column_name: str,
     censor_column_name: str,
     bin_size: int = None,
-    query_string: str = None
+    filter_value: str = None
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Calculate Kaplan-Meier curve and local event tables.
 
@@ -66,7 +66,7 @@ def calculate_km(
     """
     info('Collecting unique event times')
     unique_event_times = aggregate_unique_event_times(
-        client, ids, time_column_name, bin_size, query_string
+        client, ids, time_column_name, bin_size, filter_value
     )
 
     info('Collecting local event tables')
@@ -75,7 +75,7 @@ def calculate_km(
         unique_event_times=list(unique_event_times),
         censor_column_name=censor_column_name,
         bin_size=bin_size,
-        query_string=query_string)
+        filter_value=filter_value)
     method = 'get_km_event_table'
     local_event_tables = launch_subtask(client, method, ids, **method_kwargs)
     local_event_tables = [pd.read_json(event_table) for event_table in local_event_tables]

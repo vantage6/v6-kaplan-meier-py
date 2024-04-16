@@ -14,7 +14,7 @@ def master(
     time_column_name: str,
     censor_column_name: str,
     bin_size: int = None,
-    query_string: str = None,
+    filter_value: str = None,
     organization_ids: List[int] = None
 ) -> Dict[str, Union[str, List[str]]]:
     """Compute Kaplan-Meier curve in a federated environment.
@@ -47,6 +47,6 @@ def master(
         time_column_name=time_column_name,
         censor_column_name=censor_column_name,
         bin_size=bin_size,
-        query_string=query_string
+        filter_value=filter_value
     )
     return km.to_json()
