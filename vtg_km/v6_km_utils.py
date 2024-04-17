@@ -21,13 +21,15 @@ def aggregate_unique_event_times(
     - ids: List of organization IDs
     - time_column_name: Name of the column representing time
     - bin_size: Simple KM or use binning to obfuscate events
+    - filter_value: Value to be filtered in specified column, both from node configuration
 
     Returns:
     - List containing unique event times
     """
     method_kwargs = dict(
         time_column_name=time_column_name,
-        filter_value=filter_value)
+        filter_value=filter_value
+    )
     method = 'get_unique_event_times'
     local_unique_event_times_aggregated = launch_subtask(client, method, ids, **method_kwargs)
     unique_event_times = {0}
