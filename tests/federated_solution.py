@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-import pandas as pd
 import os
+import pandas as pd
 
 from io import StringIO
 from typing import List, Tuple
@@ -8,6 +8,7 @@ from vantage6.algorithm.tools.mock_client import MockAlgorithmClient
 from vtg_km.v6_km_utils import aggregate_unique_event_times
 from vtg_km.v6_km_utils import launch_subtask
 from .enconding_env_vars import _encode_env_var
+
 
 def get_federated_solution(
         data_paths: list, filter_value: str, time_column_name: str,
@@ -18,7 +19,7 @@ def get_federated_solution(
     Parameters:
 
     - data_paths: List with data paths for testing data
-    - query_string: Data query
+    - filter_value: Value to be filtered using specified column from node configuration
     - time_column_name: Name for event time column
     - censor_column_name: Name for censor column
     - bin_size: Size of the bin, when None binning method is not used
