@@ -24,6 +24,7 @@ def master(
     - time_column_name: Name of the column representing time
     - censor_column_name: Name of the column representing censoring
     - binning: Simple KM or use binning to obfuscate events
+    - filter_value: Value to be filtered in specified column, both from node configuration
     - organization_ids: List of organization IDs to include (default: None, includes all)
 
     Returns:
