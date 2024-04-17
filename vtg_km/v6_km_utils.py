@@ -62,6 +62,7 @@ def calculate_km(
     - time_column_name: Name of the column representing time
     - censor_column_name: Name of the column representing censoring
     - binning: Simple KM or use binning to obfuscate events
+    - filter_value: Value to be filtered in specified column, both from node configuration
 
     Returns:
     - Tuple containing Kaplan-Meier curve (DataFrame) and local event tables (list of DataFrames)
@@ -77,7 +78,8 @@ def calculate_km(
         unique_event_times=list(unique_event_times),
         censor_column_name=censor_column_name,
         bin_size=bin_size,
-        filter_value=filter_value)
+        filter_value=filter_value
+    )
     method = 'get_km_event_table'
     local_event_tables = launch_subtask(client, method, ids, **method_kwargs)
     local_event_tables = [pd.read_json(event_table) for event_table in local_event_tables]
@@ -171,6 +173,7 @@ def get_km_event_table(
     - censor_column_name: Name of the column representing censoring
     - unique_event_times: List of unique event times
     - bin_size: Size of the bin, when None binning method is not used
+    - filter_value: Value to be filtered in specified column, both from node configuration
 
     Returns:
     - JSON-formatted string representing the calculated event table
