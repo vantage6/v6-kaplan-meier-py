@@ -1,6 +1,8 @@
+import sys
+
 from typing import Dict, List, Union
 from vantage6.algorithm.client import AlgorithmClient
-from vantage6.algorithm.tools.util import info
+from vantage6.algorithm.tools.util import info, error
 from vantage6.algorithm.tools.decorators import algorithm_client
 
 from .v6_km_utils import calculate_km, get_km_event_table, get_unique_event_times
@@ -37,9 +39,9 @@ def master(
     else:
         ids = organization_ids
 
-    # if len(ids) < MINIMUM_ORGANIZATIONS:
-    #     error(f"To further ensure privacy, a minimum of {MINIMUM_ORGANIZATIONS} participating organizations is required")
-    #     sys.exit(1)
+    if len(ids) < MINIMUM_ORGANIZATIONS:
+        error(f"To further ensure privacy, a minimum of {MINIMUM_ORGANIZATIONS} participating organizations is required")
+        sys.exit(1)
 
     info(f'Sending task to organizations {ids}')
     km = calculate_km(
