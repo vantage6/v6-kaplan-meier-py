@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
+
 from typing import Any, Callable, Dict, List, Tuple, Union
 from vantage6.algorithm.client import AlgorithmClient
-from vantage6.algorithm.tools.util import info
+from vantage6.algorithm.tools.util import get_env_var, info, warn, error
 from vantage6.algorithm.tools.decorators import data
 
 
@@ -11,7 +12,7 @@ def aggregate_unique_event_times(
         ids: List[int],
         time_column_name: str,
         bin_size: int = None,
-        query_string: str = None
+        filter_value: str = None
 ) -> List[int]:
     """Calculate Kaplan-Meier curve and local event tables.
 
@@ -20,13 +21,15 @@ def aggregate_unique_event_times(
     - ids: List of organization IDs
     - time_column_name: Name of the column representing time
     - bin_size: Simple KM or use binning to obfuscate events
+    - filter_value: Value to be filtered in specified column, both from node configuration
 
     Returns:
     - List containing unique event times
     """
     method_kwargs = dict(
         time_column_name=time_column_name,
-        query_string=query_string)
+        filter_value=filter_value
+    )
     method = 'get_unique_event_times'
     local_unique_event_times_aggregated = launch_subtask(client, method, ids, **method_kwargs)
     unique_event_times = {0}
@@ -49,7 +52,7 @@ def calculate_km(
     time_column_name: str,
     censor_column_name: str,
     bin_size: int = None,
-    query_string: str = None
+    filter_value: str = None
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Calculate Kaplan-Meier curve and local event tables.
 
@@ -59,13 +62,14 @@ def calculate_km(
     - time_column_name: Name of the column representing time
     - censor_column_name: Name of the column representing censoring
     - bin_size: Simple KM or use binning to obfuscate events
+    - filter_value: Value to be filtered in specified column, both from node configuration
 
     Returns:
     - Tuple containing Kaplan-Meier curve (DataFrame) and local event tables (list of DataFrames)
     """
     info('Collecting unique event times')
     unique_event_times = aggregate_unique_event_times(
-        client, ids, time_column_name, bin_size, query_string
+        client, ids, time_column_name, bin_size, filter_value
     )
 
     info('Collecting local event tables')
@@ -74,7 +78,8 @@ def calculate_km(
         unique_event_times=list(unique_event_times),
         censor_column_name=censor_column_name,
         bin_size=bin_size,
-        query_string=query_string)
+        filter_value=filter_value
+    )
     method = 'get_km_event_table'
     local_event_tables = launch_subtask(client, method, ids, **method_kwargs)
     local_event_tables = [pd.read_json(event_table) for event_table in local_event_tables]
@@ -88,50 +93,96 @@ def calculate_km(
     return km
 
 
+def filter_df(df: pd.DataFrame, filter_value: str) -> pd.DataFrame:
+    """
+    Filter a DataFrame based on a specified value for a column specified via
+    node configuration.
+
+    Parameters:
+    - df: Input DataFrame
+    - filter_value: Value to filter on the DataFrame using the specified column
+    - [Env var] V6_FILTER_COLUMN: Name of the column to filter on
+    - [Env var] V6_FILTER_VALUES_ALLOWED: Allowed values for the filter column
+
+    Returns:
+    - Filtered DataFrame
+    """
+
+    filter_column = get_env_var("V6_FILTER_COLUMN", default=False)
+    if filter_column is False:
+        error("Filtering requested, but no filter column is set in the node configuration."
+              " Please set the V6_FILTER_COLUMN environment variable at the node.")
+        raise ValueError("No filter column set")
+    else:
+        if filter_column not in df.columns:
+            error(f"Filter column '{filter_column}' not found in dataset. "
+                  f"Please check the column name and the dataset.")
+            raise ValueError("Filter column not found in dataset")
+
+    filters_allowed = get_env_var("V6_FILTER_VALUES_ALLOWED", default=False)
+    if filters_allowed is False:
+        warn("No limitations on filter values are set. All values are allowed.")
+    else:
+        # parse env var V6_FILTER_VALUES_ALLOWED
+        filters_allowed = filters_allowed.split(',')
+
+        if filter_value not in filters_allowed:
+            error(f"Filter value '{filter_value}' is not allowed. "
+                  f"Allowed values are: {', '.join(filters_allowed)}")
+            raise ValueError("Filter value not allowed")
+
+    # if type of filter_column is not string, convert it to string
+    # TODO: this is a temporary solution, we need to handle other types
+    if not pd.api.types.is_string_dtype(df[filter_column]):
+        df[filter_column] = df[filter_column].astype(str)
+
+    return df[df[filter_column] == str(filter_value)]
+
+
 @data(1)
-def get_unique_event_times(df: pd.DataFrame, *args, **kwargs) -> List[str]:
+def get_unique_event_times(df: pd.DataFrame, time_column_name: str, filter_value: str = None) -> List[str]:
     """Get unique event times from a DataFrame.
 
     Parameters:
     - df: Input DataFrame
-    - kwargs: Additional keyword arguments, including time_column_name and query_string
+    - time_column_name: Name of the column representing time
+    - filter_value: Value to filter on the DataFrame using node-configured column
 
     Returns:
     - List of unique event times
     """
-    time_column_name = kwargs.get("time_column_name")
-    query_string = kwargs.get("query_string")
-    return (
-        df
-        .query(query_string)[time_column_name]
-        .unique()
-        .tolist()
-        )
+    if filter_value:
+        df = filter_df(df, filter_value)
+
+    return df[time_column_name].unique().tolist()
 
 
 @data(1)
-def get_km_event_table(df: pd.DataFrame, *args, **kwargs) -> str:
+def get_km_event_table(
+    df: pd.DataFrame,
+    time_column_name: str,
+    censor_column_name: str,
+    unique_event_times: List,
+    bin_size: int,
+    filter_value: str = None) -> str:
     """Calculate death counts, total counts, and at-risk counts at each unique event time.
 
     Parameters:
     - df: Input DataFrame
-    - kwargs: Additional keyword arguments, including time_column_name, unique_event_times, and censor_column_name
+    - time_column_name: Name of the column representing time
+    - censor_column_name: Name of the column representing censoring
+    - unique_event_times: List of unique event times
+    - bin_size: Size of the bin, when None binning method is not used
+    - filter_value: Value to be filtered in specified column, both from node configuration
 
     Returns:
     - JSON-formatted string representing the calculated event table
     """
-
-    # parse kwargs
-    time_column_name = kwargs.get("time_column_name")
-    unique_event_times = kwargs.get("unique_event_times")
-    censor_column_name = kwargs.get("censor_column_name")
-    bin_size = kwargs.get("bin_size", None)
-    query_string = kwargs.get("query_string", None)
-
     # Filter the local dataframe with the query
     info(f"Overall number of patients: {df.shape[0]}")
-    df = df.query(query_string)
-    info(f"Number of patients in the cohort: {df.shape[0]}")
+    if filter_value:
+        df = filter_df(df, filter_value)
+        info(f"Number of patients in the cohort: {df.shape[0]}")
 
     # Apply binning to obfuscate event times
     if bin_size:

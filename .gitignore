@@ -6,3 +6,5 @@ __pycache__/
 analysis/
 .DS_Store
 .ipynb_checkpoints
+venv/
+*.ipynb

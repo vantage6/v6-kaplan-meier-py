@@ -16,11 +16,13 @@ for i in range(1, 4):
 # Parameters for testing
 time_column_name = 'TIME_AT_RISK'
 censor_column_name = 'MORTALITY_FLAG'
+filter_value = '1029'
+# for centralised solution using lifelines
 query_string = 'COHORT_DEFINITION_ID == 1029'
 
 # Federated solution
 unique_event_times, local_events_tables, km = get_federated_solution(
-    data_paths, query_string, time_column_name, censor_column_name
+    data_paths, filter_value, time_column_name, censor_column_name
 )
 
 # Centralised solution
