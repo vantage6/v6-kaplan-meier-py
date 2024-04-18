@@ -7,7 +7,6 @@ TODO
 * :small_red_triangle_down: Remove `query` feature
 * Refactor to single task (i.e. not collecting unique times first)
 * Documentation update
-* :small_red_triangle_down: Check for correctness by adding unit tests
 * :small_red_triangle_down: Nodes: add hash to your algorithm policies
 * Allow for restricting which (algorihm) functions are allowed on a node
 * How do we deal with filtering by a column (COHORT_ID)
@@ -15,7 +14,8 @@ TODO
 * vantage6: wrong error message
   * Created issue: https://github.com/vantage6/vantage6/issues/1105
 * Multi party computation + homomorphic encryption
-:small_red_triangle_down:: Higher priority
 * Noise:
   * What's a good statistical test to feel comfortable noise is not compromising results?
   * To consider: noise based on variance?
+ 
+:small_red_triangle_down:: Higher priority
