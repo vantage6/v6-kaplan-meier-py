@@ -1,0 +1,9 @@
+.git/
+.github/
+venv/
+utils/
+.vscode
+.pytest_cache
+__pycache__
+*.pyc
+vtg_km/local
