@@ -4,19 +4,17 @@ from setuptools import setup, find_packages
 
 # package description
 cwd = path.abspath(path.dirname(__file__))
-with open(path.join(cwd, 'README.md'), encoding='utf-8') as f:
+with open(path.join(cwd, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
-    name='vtg_km',
+    name="v6-kaplan-meier-py",
     version="1.0.0",
-    description='vantage6 correlation matrix',
+    description="vantage6 Kaplan-Meier curve",
     long_description=long_description,
-    long_description_content_type='text/markdown',
-    url='https://github.com/mdw-nl/v6-km-studyathon',
+    long_description_content_type="text/markdown",
+    url="https://github.com/vantage6/v6-kaplan-meier-py",
     packages=find_packages(),
-    python_requires='>=3.10',
-    install_requires=[
-        'vantage6-algorithm-tools==4.2.0','numpy','pandas'
-    ]
+    python_requires=">=3.10",
+    install_requires=["vantage6-algorithm-tools==4.2.0", "numpy", "pandas"],
 )
