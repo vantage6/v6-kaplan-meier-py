@@ -16,5 +16,5 @@ setup(
     url="https://github.com/vantage6/v6-kaplan-meier-py",
     packages=find_packages(),
     python_requires=">=3.10",
-    install_requires=["vantage6-algorithm-tools==4.2.0", "numpy", "pandas"],
+    install_requires=["vantage6-algorithm-tools==4.4.1", "numpy", "pandas"],
 )

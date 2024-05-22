@@ -1,6 +1,7 @@
 import warnings
 import pandas as pd
 from vantage6.algorithm.tools.mock_client import MockAlgorithmClient
+
 warnings.filterwarnings("ignore")
 
 
@@ -9,14 +10,15 @@ warnings.filterwarnings("ignore")
 # a.csv and b.csv. The module name needs to be the name of your algorithm
 # package. This is the name you specified in `setup.py`, in our case that
 # would be v6-correlation-matrix-py.
-dataset_1 = {"database": "./vtg_km/local/data1.csv", "db_type": "csv"}
-dataset_2 = {"database": "./vtg_km/local/data2.csv", "db_type": "csv"}
-org_ids = ids = [0, 1]
+dataset_1 = {"database": "./v6-kaplan-meier-py/local/data1.csv", "db_type": "csv"}
+dataset_2 = {"database": "./v6-kaplan-meier-py/local/data2.csv", "db_type": "csv"}
+dataset_3 = {"database": "./v6-kaplan-meier-py/local/data3.csv", "db_type": "csv"}
+org_ids = ids = [0, 1, 2]
 
 client = MockAlgorithmClient(
-    datasets = [[dataset_1], [dataset_2]],
+    datasets=[[dataset_1], [dataset_2], [dataset_3]],
     organization_ids=org_ids,
-    module="vtg_km"
+    module="v6-kaplan-meier-py",
 )
 
 organizations = client.organization.list()
@@ -28,17 +30,15 @@ org_ids = ids = [organization["id"] for organization in organizations]
 # task takes care of the distribution to the other parties.
 average_task = client.task.create(
     input_={
-        'method': 'master',
-        'kwargs': {
-            'time_column_name': 'TIME_AT_RISK',
-            'censor_column_name': 'MORTALITY_FLAG',
-            'bin_size': 5,
-            'query_string': 'COHORT_DEFINITION_ID == 1029'
-        }
+        "method": "central",
+        "kwargs": {
+            "time_column_name": "TIME_AT_RISK",
+            "censor_column_name": "MORTALITY_FLAG",
+        },
     },
-    organizations=[org_ids[0]]
+    organizations=[org_ids[0]],
 )
 
 results = client.result.get(average_task.get("id"))
 df_events = pd.read_json(results)
-print(df_events.head())
+print(df_events)

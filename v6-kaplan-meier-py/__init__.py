@@ -1,1 +1,2 @@
-from central import *
+from .central import *
+from .partial import *

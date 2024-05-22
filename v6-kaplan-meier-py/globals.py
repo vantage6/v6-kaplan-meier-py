@@ -2,4 +2,4 @@
 # the node admin by setting the corresponding environment variables.
 
 
-MINIMUM_ORGANIZATIONS = 3
+KAPLAN_MEIER_MINIMUM_ORGANIZATIONS = 3
