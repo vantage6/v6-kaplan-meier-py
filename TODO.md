@@ -17,5 +17,7 @@ TODO
 * Noise:
   * What's a good statistical test to feel comfortable noise is not compromising results?
   * To consider: noise based on variance?
- 
+
+ * Consider re-adding the binning and filter properties
+
 :small_red_triangle_down:: Higher priority

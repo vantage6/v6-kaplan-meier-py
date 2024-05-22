@@ -12,10 +12,11 @@ from typing import Dict, List, Union
 from vantage6.algorithm.client import AlgorithmClient
 from vantage6.algorithm.tools.util import info, error
 from vantage6.algorithm.tools.decorators import algorithm_client
+from vantage6.algorithm.tools.exceptions import PrivacyThresholdViolation
 
 from .v6_km_utils import calculate_km, get_km_event_table, get_unique_event_times
 
-MINIMUM_ORGANIZATIONS = 3
+from .globals import MINIMUM_ORGANIZATIONS
 
 
 @algorithm_client
@@ -23,43 +24,48 @@ def central(
     client: AlgorithmClient,
     time_column_name: str,
     censor_column_name: str,
-    bin_size: int = None,
-    filter_value: str = None,
-    organization_ids: List[int] = None,
+    organizations_to_include: List[int] | None = None,
 ) -> Dict[str, Union[str, List[str]]]:
-    """Compute Kaplan-Meier curve in a federated environment.
-
-    Parameters:
-    - client: Vantage6 client object
-    - time_column_name: Name of the column representing time
-    - censor_column_name: Name of the column representing censoring
-    - binning: Simple KM or use binning to obfuscate events
-    - filter_value: Value to be filtered in specified column, both from node configuration
-    - organization_ids: List of organization IDs to include (default: None, includes all)
-
-    Returns:
-    - Dictionary containing Kaplan-Meier curve and local event tables
     """
-    info("Collecting information on participating organizations")
-    if not isinstance(organization_ids, list):
-        organizations = client.organization.list()
-        ids = [organization.get("id") for organization in organizations]
-    else:
-        ids = organization_ids
+    Central part of the Federated Kaplan-Meier curve computation.
 
-    if len(ids) < MINIMUM_ORGANIZATIONS:
-        error(
-            f"To further ensure privacy, a minimum of {MINIMUM_ORGANIZATIONS} participating organizations is required"
+    This part is responsible for the orchestration and aggregation of the federated
+    computation.
+
+    Parameters
+    ----------
+    client : Vantage6 client object
+        The client object used for communication with the server.
+    time_column_name : str
+        Name of the column containing the survival times.
+    censor_column_name : str
+        Name of the column containing the censoring.
+    organizations_to_include : list of int, optional
+        List of organization IDs to include (default: None, includes all).
+
+    Returns
+    -------
+    dict
+        Dictionary containing Kaplan-Meier curve and local event tables.
+    """
+    if not organizations_to_include:
+        info("Collecting information on participating organizations")
+        organizations_to_include = [
+            organization.get("id") for organization in client.organization.list()
+        ]
+
+    if len(organizations_to_include) < MINIMUM_ORGANIZATIONS:
+        raise PrivacyThresholdViolation(
+            "Minimum number of organizations not met, should be at least {MINIMUM_ORGANIZATIONS}."
         )
-        sys.exit(1)
 
     info(f"Sending task to organizations {ids}")
     km = calculate_km(
         client=client,
-        ids=ids,
+        ids=organizations_to_include,
         time_column_name=time_column_name,
         censor_column_name=censor_column_name,
-        bin_size=bin_size,
-        filter_value=filter_value,
+        # bin_size=bin_size,
+        # filter_value=filter_value,
     )
     return km.to_json()
