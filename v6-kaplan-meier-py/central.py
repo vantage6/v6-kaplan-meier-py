@@ -49,17 +49,18 @@ def central(
         Dictionary containing Kaplan-Meier curve and local event tables.
     """
     if not organizations_to_include:
-        info("Collecting information on participating organizations")
+        info("Collecting participating organizations")
         organizations_to_include = [
             organization.get("id") for organization in client.organization.list()
         ]
 
     if len(organizations_to_include) < MINIMUM_ORGANIZATIONS:
         raise PrivacyThresholdViolation(
-            "Minimum number of organizations not met, should be at least {MINIMUM_ORGANIZATIONS}."
+            "Minimum number of organizations not met, should be at least "
+            f"{MINIMUM_ORGANIZATIONS}."
         )
 
-    info(f"Sending task to organizations {ids}")
+    info(f"Sending task to {len(organizations_to_include)} organizations")
     km = calculate_km(
         client=client,
         ids=organizations_to_include,
