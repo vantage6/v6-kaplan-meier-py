@@ -2,8 +2,20 @@ import warnings
 import os
 import pandas as pd
 from vantage6.algorithm.tools.mock_client import MockAlgorithmClient
+import base64
 
 warnings.filterwarnings("ignore")
+
+STRING_ENCODING = "utf-8"
+ENV_VAR_EQUALS_REPLACEMENT = "="
+
+
+def _encode(string: str):
+    return (
+        base64.b32encode(string.encode(STRING_ENCODING))
+        .decode(STRING_ENCODING)
+        .replace("=", ENV_VAR_EQUALS_REPLACEMENT)
+    )
 
 
 # Initialize the mock server. The datasets simulate the local datasets from
@@ -25,7 +37,8 @@ client = MockAlgorithmClient(
 organizations = client.organization.list()
 org_ids = ids = [organization["id"] for organization in organizations]
 
-os.environ["KAPLAN_MEIER_PRIVACY_SNR_EVENT_TIME"] = "-1"
+os.environ["KAPLAN_MEIER_TYPE_NOISE"] = _encode("NONE")
+# os.environ["KAPLAN_MEIER_PRIVACY_SNR_EVENT_TIME"] = _encode("-1")
 
 # To trigger the master method you also need to supply the `master`-flag
 # to the input. Also note that we only supply the task to a single organization
@@ -45,8 +58,8 @@ average_task = client.task.create(
 results = client.result.get(average_task.get("id"))
 df_events_clean = pd.read_json(results)
 
-
-os.environ["KAPLAN_MEIER_PRIVACY_SNR_EVENT_TIME"] = "5"
+os.environ["KAPLAN_MEIER_TYPE_NOISE"] = _encode("GAUSSIAN")
+os.environ["KAPLAN_MEIER_PRIVACY_SNR_EVENT_TIME"] = _encode("5")
 
 # To trigger the master method you also need to supply the `master`-flag
 # to the input. Also note that we only supply the task to a single organization
@@ -66,8 +79,8 @@ average_task = client.task.create(
 results = client.result.get(average_task.get("id"))
 df_events_noise = pd.read_json(results)
 
-
-os.environ["KAPLAN_MEIER_PRIVACY_SNR_EVENT_TIME"] = "50"
+os.environ["KAPLAN_MEIER_TYPE_NOISE"] = _encode("GAUSSIAN")
+os.environ["KAPLAN_MEIER_PRIVACY_SNR_EVENT_TIME"] = _encode("50")
 
 # To trigger the master method you also need to supply the `master`-flag
 # to the input. Also note that we only supply the task to a single organization
@@ -87,8 +100,7 @@ average_task = client.task.create(
 results = client.result.get(average_task.get("id"))
 df_events_small_noise = pd.read_json(results)
 
-os.environ["POISSON"] = "1"
-os.environ["KAPLAN_MEIER_PRIVACY_SNR_EVENT_TIME"] = "-1"
+os.environ["KAPLAN_MEIER_TYPE_NOISE"] = _encode("POISSON")
 
 # To trigger the master method you also need to supply the `master`-flag
 # to the input. Also note that we only supply the task to a single organization

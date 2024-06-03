@@ -15,7 +15,7 @@ from vantage6.algorithm.tools.decorators import algorithm_client
 from vantage6.algorithm.tools.exceptions import PrivacyThresholdViolation
 
 from .globals import KAPLAN_MEIER_MINIMUM_ORGANIZATIONS
-from .utils import convert_envvar_to_int
+from .utils import get_env_var_as_int
 
 
 @algorithm_client
@@ -55,7 +55,7 @@ def central(
             organization.get("id") for organization in client.organization.list()
         ]
 
-    MINIMUM_ORGANIZATIONS = convert_envvar_to_int(
+    MINIMUM_ORGANIZATIONS = get_env_var_as_int(
         "KAPLAN_MEIER_MINIMUM_ORGANIZATIONS", KAPLAN_MEIER_MINIMUM_ORGANIZATIONS
     )
     if len(organizations_to_include) < MINIMUM_ORGANIZATIONS:
