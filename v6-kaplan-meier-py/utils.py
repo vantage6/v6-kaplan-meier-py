@@ -3,7 +3,7 @@ from vantage6.algorithm.tools.util import get_env_var
 
 # FIXME: FM 22-05-2024 This function will be released with vantage6 4.5.0, and can be
 #   removed from the algorithm code at that time.
-def convert_envvar_to_int(envvar_name: str, default: str) -> int:
+def get_env_var_as_int(envvar_name: str, default: str) -> int:
     """
     Convert an environment variable to an integer value.
 
