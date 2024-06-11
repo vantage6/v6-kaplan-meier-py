@@ -197,7 +197,7 @@ def __create_cohort_dataframe(
     meta_run: RunMetaData,
     meta_omop: OHDSIMetaData,
     cohort_task_id: int,
-    shared_cohort_id: float,
+    shared_cohort_id: str,
 ) -> list[pd.DataFrame]:
     """
     Query the database for the data of the cohort.
@@ -221,7 +221,7 @@ def __create_cohort_dataframe(
 
     # Obtain SQL file for standard features
     sql_path = pkg_resources.resource_filename(
-        "v6_kaplan_meier_py", "sql/standard_features.sql"
+        "v6-kaplan-meier-py", "sql/standard_features.sql"
     )
 
     # SQL READ
@@ -365,7 +365,7 @@ def __apply_poisson_noise(df: pd.DataFrame, time_column_name: str) -> pd.DataFra
         The DataFrame with Poisson noise applied to the event times column.
     """
     __fix_random_seed()
-    df[time_column_name] = np.random.poisson(df[time_column_name])
+    df[time_column_name] = np.random.poisson(df[time_column_name].astype(np.float64))
     info("Poisson noise applied to the event times.")
     return df
 

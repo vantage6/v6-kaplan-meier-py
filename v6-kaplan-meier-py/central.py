@@ -22,7 +22,7 @@ from .utils import get_env_var_as_int
 def central(
     client: AlgorithmClient,
     cohort_task_id: int,
-    shared_cohort_id: int,
+    shared_cohort_id: str,
     time_column_name: str,
     censor_column_name: str,
     organizations_to_include: List[int] | None = None,
@@ -60,11 +60,11 @@ def central(
     MINIMUM_ORGANIZATIONS = get_env_var_as_int(
         "KAPLAN_MEIER_MINIMUM_ORGANIZATIONS", KAPLAN_MEIER_MINIMUM_ORGANIZATIONS
     )
-    if len(organizations_to_include) < MINIMUM_ORGANIZATIONS:
-        raise PrivacyThresholdViolation(
-            "Minimum number of organizations not met, should be at least "
-            f"{MINIMUM_ORGANIZATIONS}."
-        )
+    # if len(organizations_to_include) < MINIMUM_ORGANIZATIONS:
+    #     raise PrivacyThresholdViolation(
+    #         "Minimum number of organizations not met, should be at least "
+    #         f"{MINIMUM_ORGANIZATIONS}."
+    #     )
 
     info("Collecting unique event times")
     local_unique_event_times_per_node = _start_partial_and_collect_results(

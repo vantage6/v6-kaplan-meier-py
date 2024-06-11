@@ -7,14 +7,14 @@ WITH death_query AS (
     FROM
         @cohort_table c
     LEFT JOIN
-        @cdm_database_schema.death T 
+        @cdm_database_schema.death T
 	ON T.person_id = c.subject_id
     {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
 ),
 
 /* gender, year of birth, birth int, age
 */
-person_query AS ( 
+person_query AS (
     SELECT
         c.subject_id,
         T.gender_concept_id AS gender,
@@ -24,14 +24,14 @@ person_query AS (
     FROM
         @cohort_table c
     LEFT JOIN
-        @cdm_database_schema.person T 
+        @cdm_database_schema.person T
 	ON T.person_id = c.subject_id
     {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
 ),
 
 /* condition_concept_id, condition_occurrence_start, condition_occurrence_end
 */
-condition_occurrence_query AS ( 
+condition_occurrence_query AS (
     SELECT
 		c.subject_id,
         T.condition_concept_id,
@@ -40,14 +40,14 @@ condition_occurrence_query AS (
     FROM
         @cohort_table c
     LEFT JOIN
-        @cdm_database_schema.condition_occurrence T 
+        @cdm_database_schema.condition_occurrence T
 	ON T.person_id = c.subject_id
     {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
 ),
 
 /* drug_concept_id, drug_exposure_start, drug_exposure_end
 */
-drug_exposure_query AS ( 
+drug_exposure_query AS (
     SELECT
 		c.subject_id,
         T.drug_concept_id,
@@ -56,14 +56,14 @@ drug_exposure_query AS (
     FROM
         @cohort_table c
     LEFT JOIN
-        @cdm_database_schema.drug_exposure T 
+        @cdm_database_schema.drug_exposure T
 	ON T.person_id = c.subject_id
     {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
 ),
 
 /* procedure_concept_id, procedure_occurrence_start, procedure_occurrence_end
 */
-procedure_occurrence_query AS ( 
+procedure_occurrence_query AS (
     SELECT
 		c.subject_id,
         T.procedure_concept_id,
@@ -72,15 +72,15 @@ procedure_occurrence_query AS (
     FROM
         @cohort_table c
     LEFT JOIN
-        @cdm_database_schema.procedure_occurrence T 
+        @cdm_database_schema.procedure_occurrence T
 	ON T.person_id = c.subject_id
     {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
 ),
 
-/* measurement_concept_id, measurement_start, measurement_unit_concept_id, measurement_vac, 
+/* measurement_concept_id, measurement_start, measurement_unit_concept_id, measurement_vac,
    measurement_van, measurement_operator_concept_id
 */
-measurement_query AS ( 
+measurement_query AS (
     SELECT
 		c.subject_id,
         T.measurement_concept_id,
@@ -92,15 +92,15 @@ measurement_query AS (
     FROM
         @cohort_table c
     LEFT JOIN
-        @cdm_database_schema.measurement T 
+        @cdm_database_schema.measurement T
 	ON T.person_id = c.subject_id
     {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
 ),
 
-/* observation_concept_id, observation_start, observation_unit_concept_id, observation_vac, 
+/* observation_concept_id, observation_start, observation_unit_concept_id, observation_vac,
 observation_van, observation_vas, observation_qualifier_concept_id
 */
-observation_query AS ( 
+observation_query AS (
     SELECT
 		c.subject_id,
         T.observation_concept_id,
@@ -113,7 +113,7 @@ observation_query AS (
     FROM
         @cohort_table c
     LEFT JOIN
-        @cdm_database_schema.observation T 
+        @cdm_database_schema.observation T
 	ON T.person_id = c.subject_id
     {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
 )
@@ -132,29 +132,30 @@ SELECT
 	de.drug_concept_id,
 	de.drug_exposure_start,
 	de.drug_exposure_end,
-	po.procedure_concept_id, 
-	po.procedure_occurrence_start, 
+	po.procedure_concept_id,
+	po.procedure_occurrence_start,
 	po.procedure_occurrence_end,
-	m.measurement_concept_id, 
-	m.measurement_start, 
-	m.measurement_unit_concept_id, 
-	m.measurement_vac, 
-	m.measurement_van, 
+	m.measurement_concept_id,
+	m.measurement_start,
+	m.measurement_unit_concept_id,
+	m.measurement_vac,
+	m.measurement_van,
 	m.measurement_operator_concept_id,
-	o.observation_concept_id, 
-	o.observation_start, 
-	o.observation_unit_concept_id, 
-	o.observation_vac, 
-	o.observation_van, 
-	o.observation_vas, 
-	o.observation_qualifier_concept_id
+	o.observation_concept_id,
+	o.observation_start,
+	o.observation_unit_concept_id,
+	o.observation_vac,
+	o.observation_van,
+	o.observation_vas,
+	o.observation_qualifier_concept_id,
+    CASE WHEN d.death_int IS NOT NULL THEN 1 ELSE 0 END AS censor
 FROM
-    person_query p 
+    person_query p
 FULL OUTER JOIN
     death_query d
 	ON d.subject_id = p.subject_id
 FULL OUTER JOIN
-	condition_occurrence_query c 
+	condition_occurrence_query c
 	ON p.subject_id = c.subject_id
 FULL OUTER JOIN
 	drug_exposure_query de
@@ -168,7 +169,7 @@ FULL OUTER JOIN
 FULL OUTER JOIN
 	observation_query o
 	ON p.subject_id = o.subject_id
-	
+
 WHERE (condition_concept_id IN (@incl_condition_concept_id) OR (@incl_condition_concept_id) IS NULL)
 AND (procedure_concept_id IN (@incl_procedure_concept_id) OR (@incl_procedure_concept_id) IS NULL)
 AND (measurement_concept_id IN (@incl_measurement_concept_id) OR (@incl_measurement_concept_id) IS NULL)
