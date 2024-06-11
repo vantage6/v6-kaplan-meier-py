@@ -17,4 +17,5 @@ setup(
     packages=find_packages(),
     python_requires=">=3.10",
     install_requires=["vantage6-algorithm-tools==4.4.1", "numpy", "pandas"],
+    package_data={"v6_kaplan_meier_py": ["sql/*.sql"]},
 )

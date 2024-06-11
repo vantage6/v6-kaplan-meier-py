@@ -15,11 +15,11 @@ ifeq ($(PUSH_REG), true)
 endif
 
 image:
-	@echo "Building ${REGISTRY}/algorithms/kaplan-meier:${TAG}-v6-${VANTAGE6_VERSION}"
-	@echo "Building ${REGISTRY}/algorithms/kaplan-meier:latest"
+	@echo "Building ${REGISTRY}/blueberry/kaplan-meier:${TAG}-v6-${VANTAGE6_VERSION}"
+	@echo "Building ${REGISTRY}/blueberry/kaplan-meier:latest"
 	docker buildx build \
-		--tag ${REGISTRY}/algorithms/kaplan-meier:${TAG} \
-		--tag ${REGISTRY}/algorithms/kaplan-meier:latest \
+		--tag ${REGISTRY}/blueberry/kaplan-meier:${TAG} \
+		--tag ${REGISTRY}/blueberry/kaplan-meier:latest \
 		--platform ${PLATFORMS} \
 		-f ./Dockerfile \
 		$(if ${_condition_push},--push .,.)
