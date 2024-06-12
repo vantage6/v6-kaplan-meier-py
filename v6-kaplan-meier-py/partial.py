@@ -365,7 +365,11 @@ def __apply_poisson_noise(df: pd.DataFrame, time_column_name: str) -> pd.DataFra
         The DataFrame with Poisson noise applied to the event times column.
     """
     __fix_random_seed()
-    df[time_column_name] = np.random.poisson(df[time_column_name].astype(np.float64))
+    info(f"Applying Poisson noise to the event times: {time_column_name}")
+    # df[time_column_name] = np.random.poisson(df[time_column_name])
+    df.loc[df[time_column_name].notnull(), time_column_name] = np.random.poisson(
+        df.loc[df[time_column_name].notnull(), time_column_name]
+    )
     info("Poisson noise applied to the event times.")
     return df
 
