@@ -4,6 +4,7 @@ WITH death_query AS (
     SELECT
         c.subject_id,
         DATEDIFF(DAY, cohort_start_date, death_date) AS death_int
+        DATEDIFF(DAY, cohort_start_date, cohort_end_date) AS cohort_int
     FROM
         @cohort_table c
     LEFT JOIN
@@ -148,7 +149,8 @@ SELECT
 	o.observation_van,
 	o.observation_vas,
 	o.observation_qualifier_concept_id,
-    CASE WHEN d.death_int IS NOT NULL THEN 1 ELSE 0 END AS censor
+    CASE WHEN d.death_int IS NOT NULL THEN 1 ELSE 0 END AS censor,
+    COALESCE(d.death_int, d.cohort_int) AS surv_int
 FROM
     person_query p
 FULL OUTER JOIN
