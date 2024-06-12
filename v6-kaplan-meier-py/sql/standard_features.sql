@@ -3,7 +3,7 @@
 WITH death_query AS (
     SELECT
         c.subject_id,
-        DATEDIFF(DAY, cohort_start_date, death_date) AS death_int
+        DATEDIFF(DAY, cohort_start_date, death_date) AS death_int,
         DATEDIFF(DAY, cohort_start_date, cohort_end_date) AS cohort_int
     FROM
         @cohort_table c
