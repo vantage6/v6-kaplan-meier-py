@@ -19,7 +19,7 @@ from .utils import get_env_var_as_int
 
 
 @algorithm_client
-def central(
+def kaplan_meier_central(
     client: AlgorithmClient,
     cohort_task_id: int,
     shared_cohort_id: str,
