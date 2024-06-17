@@ -20,6 +20,15 @@
             },
             "description": "Surival time table for the cohort.",
             "type": "table"
+          },
+          {
+            "name": "Kaplan-Meier curve",
+            "properties": {
+              "x": "SURV_INT",
+              "y": "survival_cdf"
+            },
+            "description": "Kaplan-Meier curve for the cohort.",
+            "type": "line"
           }
         ],
         "arguments": [
