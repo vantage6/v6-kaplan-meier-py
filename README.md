@@ -7,18 +7,12 @@
     A Privacy Enhancing Technologies Operations (PETOps) platform
 </h3>
 
-![Discord](https://img.shields.io/discord/:643526403207331841)
+![Discord](https://img.shields.io/discord/643526403207331841)
 
 --------------------
 # Kaplan-Meier on OHDSI
 
-This repository contains an implementation of the Kaplan-Meier curve calculation designed for federated learning environments via the vantage6 framework. It allows for the estimation of survival probabilities across distributed datasets without sharing the patient-specific information. This method supports privacy-enhancing data analysis in medical research and other fields where event-time analysis is critical.
-
-The algorithm operates within the vantage6 infrastructure, a platform supporting federated learning, to enable institutions to perform survival analysis while maintaining data privacy.
-
-This initial version has been updated and adapted for the [BlueBerry](https://euracan.eu/registries/blueberry/) project.
-
-Follow the instructions in subsequent sections to set up and execute the federated Kaplan-Meier analysis.
+This repository contains an implementation of the Kaplan-Meier curve calculation designed for federated learning environments via the [vantage6](https://vantage6.ai) framework. It allows for the estimation of survival probabilities across distributed datasets without sharing the patient-specific information. This method supports privacy-enhancing data analysis in medical research and other fields where event-time analysis is critical.
 
 *TODO: Add a link to the documentation.*
 
