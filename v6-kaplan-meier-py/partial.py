@@ -173,7 +173,10 @@ def _privacy_gaurds(df: pd.DataFrame, time_column_name: str) -> pd.DataFrame:
         "KAPLAN_MEIER_MINIMUM_NUMBER_OF_RECORDS", KAPLAN_MEIER_MINIMUM_NUMBER_OF_RECORDS
     )
     if len(df) <= MINIMUM_NUMBER_OF_RECORDS:
-        raise InputError("Number of records in 'df' must be greater than 3.")
+        raise InputError(
+            "Number of records in 'df' must be greater than "
+            f"{MINIMUM_NUMBER_OF_RECORDS}."
+        )
 
     info("Check that the selected time column is allowed by the node")
     ALLOWED_EVENT_TIME_COLUMNS_REGEX = get_env_var_as_list(
@@ -214,10 +217,12 @@ def __create_cohort_dataframe(
     """
     # Get the task id of the task that created the cohort at this node
     cohort_table = f"cohort_{cohort_task_id}_{meta_run.node_id}"
+    info(f"Using cohort table: {cohort_table}")
 
     # Obtain the cohort IDs by combining the shared ids (equal over all nodes) with the
     # local node id
     cohort_id = float(f"{meta_run.node_id}{shared_cohort_id}")
+    info(f"Using cohort ID: {cohort_id}")
 
     # Obtain SQL file for standard features
     sql_path = pkg_resources.resource_filename(
@@ -231,10 +236,13 @@ def __create_cohort_dataframe(
         error(f"Failed to read SQL file: {e}")
         traceback.print_exc()
         raise e
+    info(f"Read SQL file: {sql_path}")
 
+    info("Start query sequence the database")
     df = _query_database(connection, raw_sql, cohort_table, cohort_id, meta_omop)
 
     # NACHARS
+    info("Post-processing the data")
     df["OBSERVATION_VAS"] = df["OBSERVATION_VAS"].apply(
         lambda val: np.nan if isinstance(val, NACharacterType) else val
     )
@@ -255,6 +263,7 @@ def _query_database(
 ) -> pd.DataFrame:
 
     # RENDER
+    info("Rendering the SQL")
     sql = render(
         sql,
         cohort_table=f"{meta_omop.results_schema}.{cohort_table}",
@@ -267,9 +276,11 @@ def _query_database(
     )
 
     # TRANSLATE
+    info("Translating the SQL")
     sql = translate(sql, target_dialect="postgresql")
 
     # QUERY
+    info("Querying the database")
     try:
         data_r = query_sql(connection, sql)
     except Exception as e:
@@ -278,6 +289,7 @@ def _query_database(
         with open("errorReportSql.txt", "r") as f:
             error(f.read())
 
+    info("Convert")
     # CONVERT
     return convert_from_r(data_r)
 

@@ -10,7 +10,7 @@ WITH death_query AS (
     LEFT JOIN
         @cdm_database_schema.death T
 	ON T.person_id = c.subject_id
-    {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
+    {@cohort_id != -1} ? {WHERE cohort_definition_id = @cohort_id}
 ),
 
 /* gender, year of birth, birth int, age
@@ -27,7 +27,7 @@ person_query AS (
     LEFT JOIN
         @cdm_database_schema.person T
 	ON T.person_id = c.subject_id
-    {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
+    {@cohort_id != -1} ? {WHERE cohort_definition_id = @cohort_id}
 ),
 
 /* condition_concept_id, condition_occurrence_start, condition_occurrence_end
@@ -43,7 +43,7 @@ condition_occurrence_query AS (
     LEFT JOIN
         @cdm_database_schema.condition_occurrence T
 	ON T.person_id = c.subject_id
-    {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
+    {@cohort_id != -1} ? {WHERE cohort_definition_id = @cohort_id}
 ),
 
 /* drug_concept_id, drug_exposure_start, drug_exposure_end
@@ -59,7 +59,7 @@ drug_exposure_query AS (
     LEFT JOIN
         @cdm_database_schema.drug_exposure T
 	ON T.person_id = c.subject_id
-    {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
+    {@cohort_id != -1} ? {WHERE cohort_definition_id = @cohort_id}
 ),
 
 /* procedure_concept_id, procedure_occurrence_start, procedure_occurrence_end
@@ -75,7 +75,7 @@ procedure_occurrence_query AS (
     LEFT JOIN
         @cdm_database_schema.procedure_occurrence T
 	ON T.person_id = c.subject_id
-    {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
+    {@cohort_id != -1} ? {WHERE cohort_definition_id = @cohort_id}
 ),
 
 /* measurement_concept_id, measurement_start, measurement_unit_concept_id, measurement_vac,
@@ -95,7 +95,7 @@ measurement_query AS (
     LEFT JOIN
         @cdm_database_schema.measurement T
 	ON T.person_id = c.subject_id
-    {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
+    {@cohort_id != -1} ? {WHERE cohort_definition_id = @cohort_id}
 ),
 
 /* observation_concept_id, observation_start, observation_unit_concept_id, observation_vac,
@@ -116,7 +116,7 @@ observation_query AS (
     LEFT JOIN
         @cdm_database_schema.observation T
 	ON T.person_id = c.subject_id
-    {@cohort_id != -1} ? {AND cohort_definition_id = @cohort_id}
+    {@cohort_id != -1} ? {WHERE cohort_definition_id = @cohort_id}
 )
 
 

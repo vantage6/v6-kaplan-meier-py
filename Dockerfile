@@ -1,7 +1,8 @@
-FROM harbor2.vantage6.ai/infrastructure/algorithm-ohdsi-base:${BASE}
-
 ARG BASE=4.5
 ARG TAG=latest
+
+FROM harbor2.vantage6.ai/infrastructure/algorithm-ohdsi-base:${BASE}
+
 ARG PKG_NAME="v6-kaplan-meier-py"
 
 LABEL version=${TAG}
