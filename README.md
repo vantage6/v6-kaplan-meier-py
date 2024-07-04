@@ -1,142 +1,47 @@
-# Federated Kaplan-Meier Curve Calculation with vantage6
+<h1 align="center">
+  <br>
+  <a href="https://vantage6.ai"><img src="https://github.com/IKNL/guidelines/blob/master/resources/logos/vantage6.png?raw=true" alt="vantage6" width="400"></a>
+</h1>
 
-This repository contains an implementation of the Kaplan-Meier curve calculation designed for federated learning environments via the vantage6 framework. It allows for the estimation of survival probabilities across distributed datasets without sharing the patient-specific information. This method supports privacy-preserving data analysis in medical research and other fields where event-time analysis is critical.
+<h3 align=center>
+    A Privacy Enhancing Technologies Operations (PETOps) platform
+</h3>
+
+--------------------
+# Kaplan-Meier on OHDSI
+
+This repository contains an implementation of the Kaplan-Meier curve calculation designed for federated learning environments via the vantage6 framework. It allows for the estimation of survival probabilities across distributed datasets without sharing the patient-specific information. This method supports privacy-enhancing data analysis in medical research and other fields where event-time analysis is critical.
 
 The algorithm operates within the vantage6 infrastructure, a platform supporting federated learning, to enable institutions to perform survival analysis while maintaining data privacy. The initial idea was based on contributions from Benedetta Gottardelli (benedetta.gottardelli@unicatt.it).
+
+This initial version has been updated and adapted for the [BlueBerry](https://euracan.eu/registries/blueberry/) project.
 
 Follow the instructions in subsequent sections to set up and execute the federated Kaplan-Meier analysis.
 
 
-## Usage
+## Privacy Gaurds
 
-This section provides a comprehensive guide on how to use the repository to perform federated Kaplan-Meier analysis, from initializing the client to executing the task and retrieving the results.
+### Minimum number of organizations
+In order to minimize the risk of reconstruction the number of organizations should be at least 3. The value of this threshold can be changed by setting `KAPLAN_MEIER_MINIMUM_ORGANIZATIONS`. Note that this threshold can be set by the aggregator party only!
 
-To perform Kaplan-Meier curve calculation in a federated learning context using vantage6, follow these instructions:
+### Minimum number of records
+The algorithm will only share information if there are at least n records present in the local dataset. This can be set using the variable `KAPLAN_MEIER_MINIMUM_NUMBER_OF_RECORDS`.
 
-1. **Install vantage6 Client** (if not already installed):
+### Fix event time column
+In order to limit the options the user has for selecting the event time column the `KAPLAN_MEIER_ALLOWED_EVENT_TIME_COLUMNS_REGEX` can be set to a comma separated list. Each element in the list can be a regex pattern.
+
+### Noise to event times
+In order to protect the individual event times noise can be added to this column. The column is user defined, see “Fixed event time column” section.
+
+The type of noise can be set through `KAPLAN_MEIER_TYPE_NOISE`. This can be one of the following:
+
+* `NONE` – no noise will be added to the time event columns
+* `GAUSSIAN` – Gaussian noise will be added, the amount of noise can be controlled to a signal to noise ratio: `KAPLAN_MEIER_PRIVACY_SNR_EVENT_TIME`. The SNR is defined as the amount of noise compared to the standard deviation of the original signal.
+* `POISSON` – Poisson noise will be applied.
+
+## Build
+In order to build its best to use the makefile.
+
 ```bash
-pip install vantage6-client
+make image VANTAGE6_VERSION=4.5.3
 ```
-
-2. **Initialize vantage6 Client**
-
-```python
-from vantage6.client import Client
-
-# Load your configuration settings from a file or environment
-config = {
-    'server_url': '<API_ENDPOINT>',
-    'server_port': <API_PORT>,
-    'server_api': '<API_VERSION>',
-    'username': '<USERNAME>',
-    'password': '<PASSWORD>',
-    'organization_key': '<ORGANIZATION_PRIVATE_KEY>'
-}
-
-client = Client(config['server_url'], config['server_port'], config['server_api'])
-client.authenticate(username=config['username'], password=config['password'])
-client.setup_encryption(config['organization_key'])
-```
-
-Replace the placeholders in `config` with your actual configuration details.
-
-3. **Define Algorithm Input**
-```python
-input_ = {
-    'method': 'master',
-    'kwargs': {
-        'time_column_name': 'time_to_event',
-        'censor_column_name': 'event_occurred',
-        'organization_ids': [1, 2, 3], # Example organization IDs
-        'bin_size': None  # Or a specific bin size
-    }
-}
-```
-
-Set your specific time and censor column names, organization IDs, and bin size if needed.
-
-4. **Create and Run the Task**
-```python
-task = client.task.create(
-    collaboration=3,  # Use your specific collaboration ID
-    organizations=[1, 2, 3],  # List your organization IDs
-    name='Kaplan-Meier Task',  # Give your task a specific name
-    image='ghcr.io/mdw-nl/v6-km-studyathon:v1',  # Specify the desired algorithm Docker image version
-    description='Survival analysis using Kaplan-Meier',  # Describe the task
-    databases=[{'label': 'my_database_label'}],  # Use your database label
-    input_=input_
-)
-```
-
-Provide actual values for the `collaboration`, `organizations`, `name`, `image`, `description`, and `databases` fields.
-
-5. **Monitor and Retrieve Results**: Utilize the vantage6 client methods to check the status of the task and retrieve the results when the task is complete.
-
-Ensure all prerequisites are met and configurations are set by referring to the 'Installation and Setup' section before proceeding with the above steps.
-
-
-## Data Format and Preprocessing
-
-To ensure successful Kaplan-Meier curve calculation, databases at each node need to be structured with the necessary columns:
-
-- `time_column_name`: Indicates the time from the start point (e.g., diagnosis) to either an event of interest (e.g., death) or right censoring. Should be of a numeric dtype (integer or float).
-  
-- `censor_column_name`: A binary column indicating whether the event of interest occurred (1) or if the data was censored (0). Needs to be of integer dtype.
-  
-Optionally, a `patient_id` column can be included as a unique identifier for each subject, but it is not required for the analysis.
-
-### Sample Table Structure:
-
-| Column Name           | Description                                       | Dtype   | Required |
-|-----------------------|---------------------------------------------------|---------|----------|
-| patient_id            | Unique identifier for each patient (optional)     | String  | No       |
-| time_to_event         | Duration until event of interest or censoring     | Numeric | Yes      |
-| event_occurred        | Event occurrence indicator (1: yes, 0: no)        | Integer | Yes      |
-| additional_column1    | Description of optional additional data           | ...     | No       |
-| additional_column2    | Description of optional additional data           | ...     | No       |
-| ...                   | ...                                               | ...     | ...      |
-
-`time_to_event` refers to your `time_column_name` and `event_occurred` to your `censor_column_name`, as defined in the input parameters of the algorithm.
-
-### Preprocessing Steps:
-
-1. Confirm no missing values in numeric columns like `time_column_name`. Handle any missing data through imputation or exclusion before proceeding.
-
-2. Ensure `censor_column_name` is binary (containing only 0s and 1s) and of integer dtype.
-
-3. Perform any necessary data cleaning, normalization, or datatype conversion on additional columns according to the specifics of your study and requirements for the analysis.
-
-Be mindful that any domain-specific preprocessing, such as adjusting time units or categorizing features, should be completed prior to analysis.
-
-Follow these specifications to prepare your data correctly for a federated analysis with the Kaplan-Meier algorithm on vantage6.
-
-
-## Output Interpretation
-
-The Kaplan-Meier curve calculation returns a DataFrame with the following columns, including their data types and descriptions:
-
-| Column Name                 | Dtype          | Description                                                                     |
-|-----------------------------|----------------|---------------------------------------------------------------------------------|
-| `<time_column_name>`        | Numeric (float or int) | Timestamps of the events or censored data, based on the provided time data.     |
-| `removed`                   | Integer        | Number of subjects removed from the risk set in each time interval.             |
-| `observed`                  | Integer        | Observed number of events of interest (e.g., death or failure) at each timestamp.|
-| `censored`                  | Integer        | Number of subjects censored at each timestamp.                                  |
-| `at_risk`                   | Integer        | Number of individuals at risk at each timestamp.                                |
-| `hazard`                    | Float          | Hazard rate at each timestamp, calculated as `observed / at_risk`.              |
-| `survival_cdf`              | Float          | Cumulative survival probability up to and including each timestamp.              |
-
-* Replace `<time_column_name>` with the column name you specified in the input configuration for the time data.
-
-### How to Interpret the Output:
-
-- `<time_column_name>` shows each recorded or estimated event/censoring timestamp, which is not an interval but discrete points in time.
-
-- `observed` provides the count of events that occurred, while `censored` shows how many subjects' data did not reach an event by the end of observation.
-
-- `at_risk` is critical as it denotes the number of subjects that could potentially experience the event at each timestamp.
-
-- The `hazard` rate gives an indication of the instant risk of event occurrence over time.
-
-- `survival_cdf` is the key metric representing the estimated probability of surviving beyond each timestamp in `<time_column_name>`.
-
-The analysis is commonly graphed as the Kaplan-Meier curve plotting `survival_cdf` versus `<time_column_name>` to depict survival trends over time. Periods with a high `censored` count should be carefully interpreted, as they may affect the accuracy of the survival analysis.

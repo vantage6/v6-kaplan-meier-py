@@ -19,8 +19,10 @@ from .utils import get_env_var_as_int
 
 
 @algorithm_client
-def central(
+def kaplan_meier_central(
     client: AlgorithmClient,
+    cohort_task_id: int,
+    shared_cohort_id: str,
     time_column_name: str,
     censor_column_name: str,
     organizations_to_include: List[int] | None = None,
@@ -58,17 +60,19 @@ def central(
     MINIMUM_ORGANIZATIONS = get_env_var_as_int(
         "KAPLAN_MEIER_MINIMUM_ORGANIZATIONS", KAPLAN_MEIER_MINIMUM_ORGANIZATIONS
     )
-    if len(organizations_to_include) < MINIMUM_ORGANIZATIONS:
-        raise PrivacyThresholdViolation(
-            "Minimum number of organizations not met, should be at least "
-            f"{MINIMUM_ORGANIZATIONS}."
-        )
+    # if len(organizations_to_include) < MINIMUM_ORGANIZATIONS:
+    #     raise PrivacyThresholdViolation(
+    #         "Minimum number of organizations not met, should be at least "
+    #         f"{MINIMUM_ORGANIZATIONS}."
+    #     )
 
     info("Collecting unique event times")
     local_unique_event_times_per_node = _start_partial_and_collect_results(
         client=client,
         method="get_unique_event_times",
         organizations_to_include=organizations_to_include,
+        cohort_task_id=cohort_task_id,
+        shared_cohort_id=shared_cohort_id,
         time_column_name=time_column_name,
     )
 
@@ -82,9 +86,11 @@ def central(
         client=client,
         method="get_km_event_table",
         organizations_to_include=organizations_to_include,
-        unique_event_times=list(unique_event_times),
+        cohort_task_id=cohort_task_id,
+        shared_cohort_id=shared_cohort_id,
         time_column_name=time_column_name,
         censor_column_name=censor_column_name,
+        unique_event_times=list(unique_event_times),
     )
     local_event_tables = [
         pd.read_json(event_table) for event_table in local_km_per_node

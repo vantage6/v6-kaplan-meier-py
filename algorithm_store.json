@@ -1,0 +1,67 @@
+{
+    "name": "Kaplan-Meier on OMOP",
+    "partitioning": "horizontal",
+    "vantage6_version": "4.5",
+    "functions": [
+      {
+        "name": "kaplan_meier_central",
+        "databases": [
+          {
+            "name": "OMOP CDM Database",
+            "description": "Database to use for the Kaplan-Meier curve"
+          }
+        ],
+        "ui_visualizations": [
+          {
+            "name": "Survival time table",
+            "schema": {
+              "location": [],
+              "columns": []
+            },
+            "description": "Surival time table for the cohort.",
+            "type": "table"
+          },
+          {
+            "name": "Kaplan-Meier curve",
+            "properties": {
+              "x": "SURV_INT",
+              "y": "survival_cdf"
+            },
+            "description": "Kaplan-Meier curve for the cohort.",
+            "type": "line"
+          }
+        ],
+        "arguments": [
+          {
+            "type": "integer",
+            "description": "Task ID of the task that created the cohort in the database.",
+            "name": "cohort_task_id"
+          },
+          {
+            "type": "string",
+            "description": "The cohort ID to use for the Kaplan-Meier curve.",
+            "name": "shared_cohort_id"
+          },
+          {
+            "type": "string",
+            "description": "The column name of the time variable.",
+            "name": "time_column_name"
+          },
+          {
+            "type": "string",
+            "description": "The column name of the censor.",
+            "name": "censor_column_name"
+          },
+          {
+            "type": "organization_list",
+            "description": "List of organizations to include in the analysis.",
+            "name": "organizations_to_include"
+          }
+        ],
+        "description": "Compute a Kaplan-Meier curves for a cohort of patients.",
+        "type": "central"
+      }
+    ],
+    "description": "Compute a Kaplan-Meier curves.",
+    "image": "harbor2.vantage6.ai/blueberry/kaplan-meier"
+  }

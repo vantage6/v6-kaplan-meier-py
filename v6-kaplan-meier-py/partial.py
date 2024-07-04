@@ -1,10 +1,21 @@
 import re
+import traceback
+import pkg_resources
 import pandas as pd
 import numpy as np
 
 from typing import List
+
+from rpy2.robjects import RS4
+from rpy2.rinterface_lib.sexp import NACharacterType
+
 from vantage6.algorithm.tools.util import get_env_var, info, warn, error
-from vantage6.algorithm.tools.decorators import data
+from vantage6.algorithm.tools.decorators import (
+    database_connection,
+    metadata,
+    OHDSIMetaData,
+    RunMetaData,
+)
 from vantage6.algorithm.tools.exceptions import InputError, EnvironmentVariableError
 
 from .utils import get_env_var_as_int, get_env_var_as_list, get_env_var_as_float
@@ -16,16 +27,37 @@ from .globals import (
 )
 from .enums import NoiseType
 
+from ohdsi.sqlrender import read_sql, render, translate
+from ohdsi.database_connector import query_sql
+from ohdsi.common import convert_from_r
 
-@data(1)
-def get_unique_event_times(df: pd.DataFrame, time_column_name: str) -> List[str]:
+
+@metadata
+@database_connection(types=["OMOP"], include_metadata=True)
+def get_unique_event_times(
+    connection: RS4,
+    meta_omop: OHDSIMetaData,
+    meta_run: RunMetaData,
+    cohort_task_id: int,
+    shared_cohort_id: float,
+    time_column_name: str,
+) -> List[str]:
     """
     Get unique event times from a DataFrame.
 
     Parameters
     ----------
-    df : pd.DataFrame
-        Input DataFrame supplied by the node.
+    connection : RS4
+        Connection to the database.
+    meta_omop : OHDSIMetaData
+        Metadata of the OMOP database.
+    meta_run : RunMetaData
+        Metadata of the run.
+    cohort_task_id : int
+        Task ID of the task where the cohort is created in the database.
+    shared_cohort_id : float
+        Shared cohort ID, this id is the same over all nodes and is returned by the
+        task that created the cohort.
     time_column_name : str
         Name of the column representing time.
 
@@ -39,19 +71,31 @@ def get_unique_event_times(df: pd.DataFrame, time_column_name: str) -> List[str]
     InputError
         If the time column is not found in the DataFrame.
     """
-    info("Getting unique event times")
+    info("Getting unique event times per cohort")
     info(f"Time column name: {time_column_name}")
 
+    info("Creating cohort DataFrame from OMOP CDM")
+    df = __create_cohort_dataframe(
+        connection, meta_run, meta_omop, cohort_task_id, shared_cohort_id
+    )
+
+    info("Checking privacy guards")
     _privacy_gaurds(df, time_column_name)
 
+    info("Adding noise to event times")
     df = _add_noise_to_event_times(df, time_column_name)
 
     return df[time_column_name].unique().tolist()
 
 
-@data(1)
+@metadata
+@database_connection(types=["OMOP"], include_metadata=True)
 def get_km_event_table(
-    df: pd.DataFrame,
+    connection: RS4,
+    meta_omop: OHDSIMetaData,
+    meta_run: RunMetaData,
+    cohort_task_id: int,
+    shared_cohort_id: float,
     time_column_name: str,
     censor_column_name: str,
     unique_event_times: List[int | float],
@@ -61,8 +105,17 @@ def get_km_event_table(
 
     Parameters
     ----------
-    df : pd.DataFrame
-        Input DataFrame.
+    connection : RS4
+        Connection to the database.
+    meta_omop : OHDSIMetaData
+        Metadata of the OMOP database.
+    meta_run : RunMetaData
+        Metadata of the run.
+    cohort_task_id : int
+        Task ID of the task where the cohort is created in the database.
+    shared_cohort_id : float
+        Shared cohort ID, this id is the same over all nodes and is returned by the
+        task that created the cohort.
     time_column_name : str
         Name of the column representing time.
     censor_column_name : str
@@ -75,6 +128,11 @@ def get_km_event_table(
     str
         The Kaplan-Meier event table as a JSON string.
     """
+    info("Creating cohort DataFrame from OMOP CDM")
+    df = __create_cohort_dataframe(
+        connection, meta_run, meta_omop, cohort_task_id, shared_cohort_id
+    )
+
     _privacy_gaurds(df, time_column_name)
 
     df = _add_noise_to_event_times(df, time_column_name)
@@ -115,7 +173,10 @@ def _privacy_gaurds(df: pd.DataFrame, time_column_name: str) -> pd.DataFrame:
         "KAPLAN_MEIER_MINIMUM_NUMBER_OF_RECORDS", KAPLAN_MEIER_MINIMUM_NUMBER_OF_RECORDS
     )
     if len(df) <= MINIMUM_NUMBER_OF_RECORDS:
-        raise InputError("Number of records in 'df' must be greater than 3.")
+        raise InputError(
+            "Number of records in 'df' must be greater than "
+            f"{MINIMUM_NUMBER_OF_RECORDS}."
+        )
 
     info("Check that the selected time column is allowed by the node")
     ALLOWED_EVENT_TIME_COLUMNS_REGEX = get_env_var_as_list(
@@ -132,6 +193,105 @@ def _privacy_gaurds(df: pd.DataFrame, time_column_name: str) -> pd.DataFrame:
 
     if time_column_name not in df.columns:
         raise InputError(f"Column '{time_column_name}' not found in the data frame.")
+
+
+def __create_cohort_dataframe(
+    connection: RS4,
+    meta_run: RunMetaData,
+    meta_omop: OHDSIMetaData,
+    cohort_task_id: int,
+    shared_cohort_id: str,
+) -> list[pd.DataFrame]:
+    """
+    Query the database for the data of the cohort.
+
+    Parameters
+    ----------
+    connection : RS4
+        Connection to the database.
+
+    Returns
+    -------
+    pd.DataFrame
+        The data of the cohort.
+    """
+    # Get the task id of the task that created the cohort at this node
+    cohort_table = f"cohort_{cohort_task_id}_{meta_run.node_id}"
+    info(f"Using cohort table: {cohort_table}")
+
+    # Obtain the cohort IDs by combining the shared ids (equal over all nodes) with the
+    # local node id
+    cohort_id = float(f"{meta_run.node_id}{shared_cohort_id}")
+    info(f"Using cohort ID: {cohort_id}")
+
+    # Obtain SQL file for standard features
+    sql_path = pkg_resources.resource_filename(
+        "v6-kaplan-meier-py", "sql/standard_features.sql"
+    )
+
+    # SQL READ
+    try:
+        raw_sql = read_sql(sql_path)
+    except Exception as e:
+        error(f"Failed to read SQL file: {e}")
+        traceback.print_exc()
+        raise e
+    info(f"Read SQL file: {sql_path}")
+
+    info("Start query sequence the database")
+    df = _query_database(connection, raw_sql, cohort_table, cohort_id, meta_omop)
+
+    # NACHARS
+    info("Post-processing the data")
+    df["OBSERVATION_VAS"] = df["OBSERVATION_VAS"].apply(
+        lambda val: np.nan if isinstance(val, NACharacterType) else val
+    )
+
+    # DROP DUPLICATES
+    sub_df = df.drop_duplicates("SUBJECT_ID", keep="first")
+    info(f"Dropped {len(df) - len(sub_df)} rows")
+
+    return sub_df
+
+
+def _query_database(
+    connection: RS4,
+    sql: str,
+    cohort_table: str,
+    cohort_id: float,
+    meta_omop: OHDSIMetaData,
+) -> pd.DataFrame:
+
+    # RENDER
+    info("Rendering the SQL")
+    sql = render(
+        sql,
+        cohort_table=f"{meta_omop.results_schema}.{cohort_table}",
+        cohort_id=cohort_id,
+        cdm_database_schema=meta_omop.cdm_schema,
+        incl_condition_concept_id=["NULL"],
+        incl_procedure_concept_id=["NULL"],  # 4066543
+        incl_measurement_concept_id=["NULL"],
+        incl_drug_concept_id=["NULL"],  #'ALL' ? @TODO in algo
+    )
+
+    # TRANSLATE
+    info("Translating the SQL")
+    sql = translate(sql, target_dialect="postgresql")
+
+    # QUERY
+    info("Querying the database")
+    try:
+        data_r = query_sql(connection, sql)
+    except Exception as e:
+        error(f"Failed to query the database: {e}")
+        traceback.print_exc()
+        with open("errorReportSql.txt", "r") as f:
+            error(f.read())
+
+    info("Convert")
+    # CONVERT
+    return convert_from_r(data_r)
 
 
 def _add_noise_to_event_times(df: pd.DataFrame, time_column_name: str) -> pd.DataFrame:
@@ -217,7 +377,11 @@ def __apply_poisson_noise(df: pd.DataFrame, time_column_name: str) -> pd.DataFra
         The DataFrame with Poisson noise applied to the event times column.
     """
     __fix_random_seed()
-    df[time_column_name] = np.random.poisson(df[time_column_name])
+    info(f"Applying Poisson noise to the event times: {time_column_name}")
+    # df[time_column_name] = np.random.poisson(df[time_column_name])
+    df.loc[df[time_column_name].notnull(), time_column_name] = np.random.poisson(
+        df.loc[df[time_column_name].notnull(), time_column_name]
+    )
     info("Poisson noise applied to the event times.")
     return df
 

@@ -16,5 +16,14 @@ setup(
     url="https://github.com/vantage6/v6-kaplan-meier-py",
     packages=find_packages(),
     python_requires=">=3.10",
-    install_requires=["vantage6-algorithm-tools==4.4.1", "numpy", "pandas"],
+    install_requires=[
+        "vantage6-algorithm-tools",
+        "numpy",
+        "pandas",
+        "rpy2",
+        "ohdsi-common",
+        "ohdsi-database-connector",
+        "ohdsi-sqlrender",
+    ],
+    package_data={"v6-kaplan-meier-py": ["sql/*.sql"]},
 )
