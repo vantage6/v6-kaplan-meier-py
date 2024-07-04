@@ -19,7 +19,7 @@ from .utils import get_env_var_as_int
 
 
 @algorithm_client
-def central(
+def kaplan_meier_central(
     client: AlgorithmClient,
     time_column_name: str,
     censor_column_name: str,
