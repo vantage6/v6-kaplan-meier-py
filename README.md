@@ -7,7 +7,7 @@
     A Privacy Enhancing Technologies Operations (PETOps) platform
 </h3>
 
-![Discord](https://img.shields.io/discord/643526403207331841)
+[![Discord](https://img.shields.io/discord/643526403207331841)](https://discord.gg/yAyFf6Y)
 
 --------------------
 # Kaplan-Meier on OHDSI
