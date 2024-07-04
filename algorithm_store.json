@@ -1,0 +1,57 @@
+{
+    "name": "Kaplan-Meier",
+    "partitioning": "horizontal",
+    "vantage6_version": "4.5",
+    "functions": [
+      {
+        "name": "kaplan_meier_central",
+        "databases": [
+          {
+            "name": "Database",
+            "description": "Database to use for the Kaplan-Meier curve"
+          }
+        ],
+        "ui_visualizations": [
+          {
+            "name": "Survival time table",
+            "schema": {
+              "location": [],
+              "columns": []
+            },
+            "description": "Surival time table for the cohort.",
+            "type": "table"
+          },
+          {
+            "name": "Kaplan-Meier curve",
+            "properties": {
+              "x": "<YOUR_X_AXES_COLUMN_NAME>",
+              "y": "<YOUR_Y_AXES_COLUMN_NAME>"
+            },
+            "description": "Kaplan-Meier curve for the cohort.",
+            "type": "line"
+          }
+        ],
+        "arguments": [
+          {
+            "type": "string",
+            "description": "The column name of the time variable.",
+            "name": "time_column_name"
+          },
+          {
+            "type": "string",
+            "description": "The column name of the censor.",
+            "name": "censor_column_name"
+          },
+          {
+            "type": "organization_list",
+            "description": "List of organizations to include in the analysis.",
+            "name": "organizations_to_include"
+          }
+        ],
+        "description": "Compute a Kaplan-Meier curves for a cohort of patients.",
+        "type": "central"
+      }
+    ],
+    "description": "Compute a Kaplan-Meier curves.",
+    "image": "harbor2.vantage6.ai/algorithms/kaplan-meier"
+  }
