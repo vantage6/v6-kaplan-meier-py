@@ -4,8 +4,26 @@ How to use
 Input arguments
 ---------------
 
-.. describe the input arguments:
-.. ['arg1']
+``kaplan_meier_central``
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+    :widths: 25 10 65
+    :header-rows: 1
+
+    * - Argument
+      - Type
+      - Description
+    * - ``time_column_name``
+      - ``String``
+      - The name of the column that contains the event times
+    * - ``censor_column_name``
+      - ``String``
+      - The name of the column that contains the censoring information
+    * - ``organizations_to_include``
+      - ``List`` of ``Int``
+      - The organizations that should be included in the computation
+
 
 Python client example
 ---------------------
@@ -15,12 +33,11 @@ framework. If you are not, please read the `documentation <https://docs.vantage6
 first, especially the part about the
 `Python client <https://docs.vantage6.ai/en/main/user/pyclient.html>`_.
 
-.. TODO Some explanation of the code below
-
 .. code-block:: python
 
   from vantage6.client import Client
 
+  # fill in your own values
   server = 'http://localhost'
   port = 5000
   api_path = '/api'
@@ -33,24 +50,25 @@ first, especially the part about the
   client.setup_encryption(private_key)
   client.authenticate(username, password)
 
+  org_ids = [1, 2, 3]
+
   input_ = {
-    'master': True,
-    'method': 'central',
+    'method': 'kaplan_meier_central',
     'args': [],
     'kwargs': {
-        'arg1': 'my_value',
-    },
-    'output_format': 'json'
+        "time_column_name": "TIME_AT_RISK",
+        "censor_column_name": "MORTALITY_FLAG",
+        "organizations_to_include": org_ids
+    }
   }
 
   my_task = client.task.create(
       collaboration=1,
-      organizations=[1],
+      organizations=org_ids[0],
       name='v6-kaplan-meier-py',
-      description='Federated Kaplan Meier',
-      image='v6-kaplan-meier-py',
+      description='Federated Kaplan Meier from Python Client',
+      image='harbor2.vantage6.ai/algorithms/kaplan-meier',
       input=input_,
-      data_format='json'
   )
 
   task_id = my_task.get('id')

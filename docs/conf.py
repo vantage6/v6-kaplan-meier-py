@@ -8,7 +8,8 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 
-# import os
+import os
+
 # import sys
 # sys.path.insert(0, os.path.abspath('../package'))
 
@@ -29,6 +30,7 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.intersphinx",
     "sphinx_click.ext",
+    "sphinxcontrib.plantuml",
 ]
 
 
@@ -54,3 +56,10 @@ add_module_names = False
 pygments_style = None
 
 numfig = False
+
+
+plantuml_output_format = "svg_img"
+local_plantuml_path = os.path.join(
+    os.path.dirname(__file__), "static", "java", "plantuml.jar"
+)
+plantuml = f"java -Djava.awt.headless=true -jar {local_plantuml_path}"
