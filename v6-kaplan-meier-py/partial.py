@@ -39,9 +39,9 @@ def get_unique_event_times(df: pd.DataFrame, time_column_name: str) -> List[str]
     InputError
         If the time column is not found in the DataFrame.
     """
-    info("Getting unique event times")
-    info(f"Time column name: {time_column_name}")
-
+    info("Getting unique event times.")
+    info(f"Time column name: {time_column_name}.")
+    info("Checking privacy guards.")
     _privacy_gaurds(df, time_column_name)
 
     df = _add_noise_to_event_times(df, time_column_name)
@@ -75,6 +75,7 @@ def get_km_event_table(
     str
         The Kaplan-Meier event table as a JSON string.
     """
+    info("Checking privacy guards.")
     _privacy_gaurds(df, time_column_name)
 
     df = _add_noise_to_event_times(df, time_column_name)
@@ -115,7 +116,10 @@ def _privacy_gaurds(df: pd.DataFrame, time_column_name: str) -> pd.DataFrame:
         "KAPLAN_MEIER_MINIMUM_NUMBER_OF_RECORDS", KAPLAN_MEIER_MINIMUM_NUMBER_OF_RECORDS
     )
     if len(df) <= MINIMUM_NUMBER_OF_RECORDS:
-        raise InputError("Number of records in 'df' must be greater than 3.")
+        raise InputError(
+            "Number of records in 'df' must be greater than "
+            f"{MINIMUM_NUMBER_OF_RECORDS}."
+        )
 
     info("Check that the selected time column is allowed by the node")
     ALLOWED_EVENT_TIME_COLUMNS_REGEX = get_env_var_as_list(
@@ -153,10 +157,13 @@ def _add_noise_to_event_times(df: pd.DataFrame, time_column_name: str) -> pd.Dat
     """
     NOISE_TYPE = get_env_var("KAPLAN_MEIER_TYPE_NOISE", KAPLAN_MEIER_TYPE_NOISE).upper()
     if NOISE_TYPE == NoiseType.NONE:
+        info("No noise is applied to the event times.")
         return df
     if NOISE_TYPE == NoiseType.GAUSSIAN:
+        info("Gaussian noise is added to the event times.")
         return __apply_gaussian_noise(df, time_column_name)
     elif NOISE_TYPE == NoiseType.POISSON:
+        info("Poisson noise is applied to the event times.")
         return __apply_poisson_noise(df, time_column_name)
     else:
         raise EnvironmentVariableError(f"Invalid noise type: {NOISE_TYPE}")
@@ -217,8 +224,12 @@ def __apply_poisson_noise(df: pd.DataFrame, time_column_name: str) -> pd.DataFra
         The DataFrame with Poisson noise applied to the event times column.
     """
     __fix_random_seed()
-    df[time_column_name] = np.random.poisson(df[time_column_name])
-    info("Poisson noise applied to the event times.")
+
+    # we can only apply noise to numerical values
+    df.loc[df[time_column_name].notnull(), time_column_name] = np.random.poisson(
+        df.loc[df[time_column_name].notnull(), time_column_name]
+    )
+
     return df
 
 

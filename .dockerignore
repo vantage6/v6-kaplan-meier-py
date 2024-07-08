@@ -1,9 +1,12 @@
+__pycache__
+
 .git/
 .github/
-venv/
-utils/
 .vscode
 .pytest_cache
-__pycache__
+
+utils/
+
 *.pyc
-vtg_km/local
+
+v6-kaplan-meier-py/local

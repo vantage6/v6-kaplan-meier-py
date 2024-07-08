@@ -1,4 +1,4 @@
-vantage6-algorithm-tools==4.4.1
+vantage6-algorithm-tools
 lifelines==0.28.0
 pytest==8.1.1
 flake8==7.0.0

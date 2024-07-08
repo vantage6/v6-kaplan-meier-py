@@ -4,17 +4,35 @@ Overview
 Description
 -----------
 
-.. Give short description of the algorithm on this main page of the docs
+This repository contains an implementation of the Kaplan-Meier curve calculation
+designed for federated learning environments via the `vantage6 <https://vantage6.ai>`_
+framework. It allows for the estimation of survival probabilities across distributed
+datasets without sharing the patient-specific information.
+
+The Kaplan-Meier algorithm is a non-parametric statistic used to estimate the survival
+function from lifetime data. In medical research, it is often used to measure the
+fraction of patients living for a certain amount of time after treatment.
 
 Authors
 -------
 
-.. List authors.
+* B. Gottardelli [#unicatt]_ `benedetta.gottardelli@unicatt.it <mailto:benedetta.gottardelli@unicatt.it>`_
+* A. Lobo Gomes [#maastro]_ `aiara.lobogomes@maastro.nl <aiara.lobogomes@maastro.nl>`_
+* I\. Zhovannik [#MDW]_ `ivan.zhovannik@medicaldataworks.nl <ivan.zhovannik@medicaldataworks.nl>`_
+* F.C. Martin [#IKNL]_ `f.martin@iknl.nl <mailto:f.martin@iknl.nl>`_
+* A.J. van Gestel [#IKNL]_ `a.vangestel@iknl.nl <mailto:a.vangestel@iknl.nl>`_
+
+Thanks to M.J. Bijlsma [#IKNL]_ for the suggestion of applying Poission nose to the event times.
+
+.. [#unicatt] Università Cattolica del Sacro Cuore, Italy
+.. [#maastro] MAASTRO Clinic, The Netherlands
+.. [#MDW] Medical Data Works (MDW), The Netherlands
+.. [#IKNL] Netherlands Comprehensive Cancer Organisation (IKNL), The Netherlands
 
 Source code
 -----------
 
-.. Describe where to find source code and docker files
+Source code is available on `GitHub <https://github.com/vantage6/v6-kaplan-meier-py>`_.
 
 
 Contents

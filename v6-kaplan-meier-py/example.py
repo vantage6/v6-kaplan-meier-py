@@ -46,7 +46,7 @@ os.environ["KAPLAN_MEIER_TYPE_NOISE"] = _encode("NONE")
 # task takes care of the distribution to the other parties.
 average_task = client.task.create(
     input_={
-        "method": "central",
+        "method": "kaplan_meier_central",
         "kwargs": {
             "time_column_name": "TIME_AT_RISK",
             "censor_column_name": "MORTALITY_FLAG",
@@ -67,7 +67,7 @@ os.environ["KAPLAN_MEIER_PRIVACY_SNR_EVENT_TIME"] = _encode("5")
 # task takes care of the distribution to the other parties.
 average_task = client.task.create(
     input_={
-        "method": "central",
+        "method": "kaplan_meier_central",
         "kwargs": {
             "time_column_name": "TIME_AT_RISK",
             "censor_column_name": "MORTALITY_FLAG",
@@ -79,6 +79,7 @@ average_task = client.task.create(
 results = client.result.get(average_task.get("id"))
 df_events_noise = pd.read_json(results)
 
+os.environ["KAPLAN_MEIER_RANDOM_SEED"] = _encode("1010")
 os.environ["KAPLAN_MEIER_TYPE_NOISE"] = _encode("GAUSSIAN")
 os.environ["KAPLAN_MEIER_PRIVACY_SNR_EVENT_TIME"] = _encode("50")
 
@@ -88,7 +89,7 @@ os.environ["KAPLAN_MEIER_PRIVACY_SNR_EVENT_TIME"] = _encode("50")
 # task takes care of the distribution to the other parties.
 average_task = client.task.create(
     input_={
-        "method": "central",
+        "method": "kaplan_meier_central",
         "kwargs": {
             "time_column_name": "TIME_AT_RISK",
             "censor_column_name": "MORTALITY_FLAG",
@@ -108,7 +109,7 @@ os.environ["KAPLAN_MEIER_TYPE_NOISE"] = _encode("POISSON")
 # task takes care of the distribution to the other parties.
 average_task = client.task.create(
     input_={
-        "method": "central",
+        "method": "kaplan_meier_central",
         "kwargs": {
             "time_column_name": "TIME_AT_RISK",
             "censor_column_name": "MORTALITY_FLAG",
@@ -157,30 +158,31 @@ ax1.hist(combined_dataset["TIME_AT_RISK"], bins=100, color="lightblue")
 
 # Set the y-axis label for the histogram
 ax1.set_ylabel("Frequency")
+ax1.set_xlabel("Time")
 
 # Create a second y-axis on the right side
 ax2 = ax1.twinx()
 
 # Plot the Kaplan-Meier curve for clean data
+ax2.plot(df_events_clean["TIME_AT_RISK"], df_events_clean["survival_cdf"], label="None")
 ax2.plot(
-    df_events_clean["TIME_AT_RISK"], df_events_clean["survival_cdf"], label="Clean Data"
-)
-ax2.plot(
-    df_events_noise["TIME_AT_RISK"], df_events_noise["survival_cdf"], label="Noisy Data"
+    df_events_noise["TIME_AT_RISK"],
+    df_events_noise["survival_cdf"],
+    label="Gaussian SNR=50",
 )
 
 # Plot the Kaplan-Meier curve for noisy data
 ax2.plot(
     df_events_small_noise["TIME_AT_RISK"],
     df_events_small_noise["survival_cdf"],
-    label="Small Noisy Data",
+    label="Gaussian SNR=5",
 )
 
 # Plot the Kaplan-Meier curve for noisy data
 ax2.plot(
     df_events_poisson["TIME_AT_RISK"],
     df_events_poisson["survival_cdf"],
-    label="Poisson Data",
+    label="Poisson",
 )
 
 # Set the y-axis label for the Kaplan-Meier curve
@@ -188,7 +190,7 @@ ax2.set_ylabel("Survival Probability")
 
 # Set the title and legend
 plt.title("Kaplan-Meier Curve with Histogram")
-plt.legend()
+plt.legend(title="Noise Type")
 
 
 # plt.xlabel("Time")

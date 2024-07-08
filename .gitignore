@@ -2,8 +2,8 @@
 __pycache__/
 *.egg-info/
 __pycache__/
-*.json
 analysis/
 .DS_Store
 .ipynb_checkpoints
 venv/
+docs/_build
