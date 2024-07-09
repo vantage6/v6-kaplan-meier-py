@@ -22,7 +22,7 @@ Authors
 * F.C. Martin [#IKNL]_ `f.martin@iknl.nl <mailto:f.martin@iknl.nl>`_
 * A.J. van Gestel [#IKNL]_ `a.vangestel@iknl.nl <mailto:a.vangestel@iknl.nl>`_
 
-Thanks to M.J. Bijlsma [#IKNL]_ for the suggestion of applying Poission nose to the event times.
+Thanks to M.J. Bijlsma [#IKNL]_ for the suggestion of applying Poisson noise to the event times.
 
 .. [#unicatt] Università Cattolica del Sacro Cuore, Italy
 .. [#maastro] MAASTRO Clinic, The Netherlands
