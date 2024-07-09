@@ -49,21 +49,26 @@ records:
   times noise can be added to the values in this column. It is possible to add Gaussian
   or Poission noise. Adding to much noise can make the results of the Kaplan-Meier
   analysis less accurate. The most convenient way to add noise is by applying Poission
-  noise as the amount of noise is proportional to the value. By default Poission noise
+  noise as the amount of noise is proportional to the value. By default, Poission noise
   is applied.
 
-  In case you do not want to add any noise you can set the following in the
-  node:
+  Below, we detail how to use the different types of noise. But first, in case you do
+  not want to add any noise you can set the following in the node:
 
   .. code-block:: yaml
 
     algorithm_env:
       KAPLAN_MEIER_TYPE_NOISE: "NONE"
 
-  The following methods to add noise rely on the `numpy.random` package. In order to be
-  able to reproduce the data between succesive calls, the random seed is set to a fixed
-  value. The node administrator can do this by adding the following to their node
-  configuration:
+  .. important::
+
+    Not adding any noise is not recommended. Your data would be at risk of being
+    reconstructed.
+
+  The methods that add noise rely on the `numpy.random` package. The random seed is set
+  to a fixed value, so that the results are reproduced between successive calls. The
+  node administrator can set the random seed to a fixed value  by adding the following
+  to their node configuration:
 
   .. code-block:: yaml
 
@@ -93,7 +98,7 @@ records:
       KAPLAN_MEIER_PRIVACY_SNR_EVENT_TIME: 5
 
   The ``KAPLAN_MEIER_PRIVACY_SNR_EVENT_TIME`` parameter is the signal-to-noise ratio
-  [#snr]_. Use this with caution as adding too much noise can make the results of the
+  [#snr]_. Use this with caution as adding too much noise makes the results of the
   Kaplan-Meier analysis less accurate.
 
   .. figure:: ../_static/privacy_snr_event_time.png
@@ -156,9 +161,10 @@ Vulnerabilities to known attacks
       - Risk analysis
     * - Reconstruction
       - ⚠
-      - Event times might be reconstructed / obtained by the client. To mittigate
+      - Event times might be reconstructed / obtained by the client. To mitigate this,
         noise should be added to the unique event times. The user should not send
-        many requests to the server to get the unique event times.
+        many requests with different random seeds or they may be able to reconstruct the
+        unique event times.
     * - Differencing
       - ✔
       - Not applicable
