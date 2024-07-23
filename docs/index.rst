@@ -16,9 +16,10 @@ fraction of patients living for a certain amount of time after treatment.
 Authors
 -------
 
-* B. Gottardelli [#unicatt]_ `benedetta.gottardelli@unicatt.it <mailto:benedetta.gottardelli@unicatt.it>`_
+* B. Gottardelli [#unicatt]_ `benedetta.gottardelli@gmail.com <benedetta.gottardelli@gmail.com>`_
 * A. Lobo Gomes [#maastro]_ `aiara.lobogomes@maastro.nl <aiara.lobogomes@maastro.nl>`_
 * I\. Zhovannik [#MDW]_ `ivan.zhovannik@medicaldataworks.nl <ivan.zhovannik@medicaldataworks.nl>`_
+* L. Gomez [#MDW]_ `luis.sanchezgomez@medicaldataworks.nl <luis.sanchezgomez@medicaldataworks.nl>`_
 * F.C. Martin [#IKNL]_ `f.martin@iknl.nl <mailto:f.martin@iknl.nl>`_
 * A.J. van Gestel [#IKNL]_ `a.vangestel@iknl.nl <mailto:a.vangestel@iknl.nl>`_
 
