@@ -71,8 +71,7 @@ jobs:
         id: find-current-vantage6-version
         run: |
           version=$(python -c "from vantage6.algorithm.tools import __version__; print(__version__)")
-          echo "v6_version=${version}" >> $GITHUB_ENV
-          echo "v6_version=${version}"
+          echo "v6_version=${version}" >> $GITHUB_OUTPUT
 
     outputs:
       v6_version: ${{ steps.find-current-vantage6-version.outputs.v6_version }}
