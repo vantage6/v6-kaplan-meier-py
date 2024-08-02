@@ -21,6 +21,6 @@ This implementation has been inspired by earlier implementations of the same alg
 - https://github.com/IKNL/v6-euracan-algorithms/tree/main/vtg.survfit
 
 
-Work that has been done in parralel:
+Work that has been done in parallel:
 
 - https://github.com/IKNL/v6-kaplan-meier-on-ohdsi-py

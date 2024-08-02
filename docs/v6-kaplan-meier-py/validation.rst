@@ -2,7 +2,7 @@ Validation
 ==========
 
 A `validation script <https://github.com/vantage6/v6-kaplan-meier-py>`_ is available in
-the test directory. It can be run with the following command:
+the `tests` directory. It can be run with the following command:
 
 .. code-block:: bash
 

@@ -4,14 +4,13 @@ Kaplan Meier
 Description
 -----------
 
-This repository contains an implementation of the Kaplan-Meier curve calculation
-designed for federated learning environments via the `vantage6 <https://vantage6.ai>`_
-framework. It allows for the estimation of survival probabilities across distributed
-datasets without sharing the patient-specific information.
+This `vantage6 <https://vantage6.ai>`_ algorithm computes the Kaplan-Meier curve
+in a federated manner. Hence, it allows for the estimation of survival probabilities across
+distributed datasets without sharing patient-specific information.
 
 The Kaplan-Meier algorithm is a non-parametric statistic used to estimate the survival
 function from lifetime data. In medical research, it is often used to measure the
-fraction of patients living for a certain amount of time after treatment.
+fraction of patients that are alive for a certain amount of time after treatment.
 
 Authors
 -------

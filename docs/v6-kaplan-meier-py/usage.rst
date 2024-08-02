@@ -22,7 +22,7 @@ Input arguments
       - The name of the column that contains the censoring information
     * - ``organizations_to_include``
       - ``List`` of ``Int``
-      - The organizations that should be included in the computation
+      - The IDs of the organizations that should be included in the computation
 
 
 Python client example
@@ -50,7 +50,8 @@ first, especially the part about the
   client.setup_encryption(private_key)
   client.authenticate(username, password)
 
-  org_ids = [1, 2, 3]
+  collaboration_id = 1  # or check your collaborations with client.collaboration.list()
+  org_ids = [org['id'] for org in client.organization.list(collaboration=collaboration_id)]
 
   input_ = {
     'method': 'kaplan_meier_central',

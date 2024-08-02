@@ -3,13 +3,13 @@ Implementation
 
 Overview
 --------
-The algorithm is executed in two steps at the nodes. First the unique event times are
-collected from the nodes. Then the Kaplan-Meier curve is calculated based on the event
+The algorithm is executed in two steps. First, the unique event times are
+collected from the nodes. Then, the Kaplan-Meier curve is calculated based on the event
 times and the number of events at each time point.
 
-In this process four parties are involved; the aggregator, the data stations, the client,
-and the vantage6 server. In the diagram below the central part of the algorithm is
-the aggregator, the partial parts are the data stations, the client is the party that
+In this process, four parties are involved: the aggregator, the data stations, the client,
+and the vantage6 server. In the diagram below, the central part of the algorithm is
+the aggregator; the partial parts are the data stations; the client is the party that
 requests the analysis. Note that the vantage6 server is not shown in the diagram, as it
 merely acts as a communication hub between data station, aggregator and researcher.
 
@@ -23,7 +23,7 @@ merely acts as a communication hub between data station, aggregator and research
 
 
     |client|
-    :request analysis;
+    :Request analysis;
 
     |central|
     :Collect organizations
@@ -55,7 +55,7 @@ node.
 
 ``get_unique_event_times``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Get the local unique event times. Depending on the privacy gaurds set in the node, noise
+Get the local unique event times. Depending on the privacy guards set in the node, noise
 might be added to the unique event times. The exact same noise applied in this step will
 also be applied in the ``get_km_event_table`` step.
 
