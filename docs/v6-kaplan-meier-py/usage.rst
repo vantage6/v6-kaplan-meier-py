@@ -16,10 +16,13 @@ Input arguments
       - Description
     * - ``time_column_name``
       - ``String``
-      - The name of the column that contains the event times
+      - The name of the column that contains the event times. This column should contain
+        numerical data.
     * - ``censor_column_name``
       - ``String``
-      - The name of the column that contains the censoring information
+      - The name of the column that contains the censoring information. This column
+        should contain binary data, where 1 indicates an event and 0 indicates
+        censoring.
     * - ``organizations_to_include``
       - ``List`` of ``Int``
       - The organizations that should be included in the computation
