@@ -105,14 +105,11 @@ def kaplan_meier_central(
         std_err = S_t * np.sqrt(cumulative_var)
         z = stats.norm.ppf(1 - 0.05 / 2)  # 95% CI
 
-        if S_t == 1:  # Handle the edge case where S_t = 1
-            lower = np.exp(-np.exp(z * std_err))
-            upper = 1
-        else:  # Use theta transformation for all other cases
-            theta = np.log(-np.log(S_t))
-            se_theta = np.sqrt(cumulative_var) / np.abs(np.log(S_t))
-            lower = np.exp(-np.exp(theta + z * se_theta))
-            upper = np.exp(-np.exp(theta - z * se_theta))
+        # Use log-log transformation consistently for all cases
+        theta = np.log(-np.log(S_t))
+        se_theta = std_err / (S_t * np.abs(np.log(S_t)))
+        lower = np.exp(-np.exp(theta + z * se_theta))
+        upper = np.exp(-np.exp(theta - z * se_theta))
 
         ci_bounds.append((lower, upper))
     else:
