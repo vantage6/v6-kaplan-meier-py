@@ -1,8 +1,10 @@
 import re
+
+from typing import List
+
 import pandas as pd
 import numpy as np
 
-from typing import List
 from vantage6.algorithm.tools.util import get_env_var, info, warn, error
 from vantage6.algorithm.tools.decorators import data
 from vantage6.algorithm.tools.exceptions import InputError, EnvironmentVariableError
