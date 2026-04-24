@@ -1,7 +1,7 @@
 VANTAGE6_VERSION ?= 4.5.0
 TAG ?= cotopaxi
-REGISTRY ?= harbor2.vantage6.ai
-REGISTRY_PROJECT ?= algorithms
+REGISTRY ?= ghcr.io/vantage6
+REGISTRY_PROJECT ?= algorithm
 PLATFORMS ?= linux/amd64
 TAG ?= =latest
 BASE ?= 4.5

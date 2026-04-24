@@ -71,7 +71,7 @@ first, especially the part about the
       organizations=org_ids[0],
       name='v6-kaplan-meier-py',
       description='Federated Kaplan Meier from Python Client',
-      image='harbor2.vantage6.ai/algorithms/kaplan-meier',
+      image='ghcr.io/vantage6/algorithm/kaplan-meier',
       input=input_,
   )
 
