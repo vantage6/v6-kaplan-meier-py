@@ -78,7 +78,7 @@ jobs:
 
   github-release:
     runs-on: ubuntu-latest
-    needs: [version, find-current-vantage6-version]
+    needs: [ version, find-current-vantage6-version ]
     env:
       version: ${{ needs.version.outputs.version }}
       stage: ${{ needs.version.outputs.stage }}
@@ -93,19 +93,20 @@ jobs:
           prerelease: ${{ env.stage != '' }}
 
   create-docker-image:
-      runs-on: ubuntu-latest
-      needs: [version, find-current-vantage6-version]
+    runs-on: ubuntu-latest
+    needs: [ version, find-current-vantage6-version ]
 
-      steps:
+    steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Login to Docker registry
-        uses: docker/login-action@v3
+        # pinned to: https://github.com/docker/login-action/releases/tag/v4.1.0
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121
         with:
-          registry: harbor2.vantage6.ai
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
 
       - name: Publish Docker image
         run: make image TAG=$version PUSH_REG=true VANTAGE6_VERSION=$v6_version

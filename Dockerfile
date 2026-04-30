@@ -1,6 +1,6 @@
 ARG ARG BASE=4.5
 ARG TAG=latest
-FROM harbor2.vantage6.ai/infrastructure/algorithm-base:${BASE}
+FROM ghcr.io/vantage6/infrastructure/algorithm-base:${BASE}
 
 # Change this to the package name of your project. This needs to be the same
 # as what you specified for the name in the `setup.py`.
