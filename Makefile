@@ -1,9 +1,8 @@
 VANTAGE6_VERSION ?= 4.5.0
-TAG ?= cotopaxi
+TAG ?= latest
 REGISTRY ?= ghcr.io/vantage6
 REGISTRY_PROJECT ?= algorithm
 PLATFORMS ?= linux/amd64
-TAG ?= =latest
 BASE ?= 4.5
 IMAGE ?= kaplan-meier
 

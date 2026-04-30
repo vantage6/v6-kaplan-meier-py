@@ -95,6 +95,9 @@ jobs:
   create-docker-image:
     runs-on: ubuntu-latest
     needs: [ version, find-current-vantage6-version ]
+    env:
+      version: ${{ needs.version.outputs.version }}
+      v6_version: ${{ needs.find-current-vantage6-version.outputs.v6_version }}
 
     steps:
       - name: Checkout Repository
