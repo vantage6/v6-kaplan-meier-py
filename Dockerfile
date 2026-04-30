@@ -1,4 +1,4 @@
-ARG ARG BASE=4.5
+ARG BASE=4.15
 ARG TAG=latest
 FROM ghcr.io/vantage6/infrastructure/algorithm-base:${BASE}
 
