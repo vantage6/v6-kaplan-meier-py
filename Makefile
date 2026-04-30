@@ -1,9 +1,9 @@
-VANTAGE6_VERSION ?= 4.5.0
+VANTAGE6_VERSION ?= 4.15.0
 TAG ?= latest
 REGISTRY ?= ghcr.io/vantage6
 REGISTRY_PROJECT ?= algorithm
 PLATFORMS ?= linux/amd64
-BASE ?= 4.5
+BASE ?= 4.15
 IMAGE ?= kaplan-meier
 
 # We use a conditional (true on any non-empty string) later. To avoid
