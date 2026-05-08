@@ -23,9 +23,9 @@
         },
         {
           "name": "Kaplan-Meier curve",
-          "properties": {
-            "x": "<YOUR_X_AXES_COLUMN_NAME>",
-            "y": "<YOUR_Y_AXES_COLUMN_NAME>"
+          "schema": {
+            "x": "time",
+            "y": "survival_cdf"
           },
           "description": "Kaplan-Meier curve for the cohort.",
           "type": "line"
