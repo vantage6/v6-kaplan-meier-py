@@ -53,5 +53,5 @@
     }
   ],
   "description": "Compute a Kaplan-Meier curves.",
-  "image": "ghcr.io/vantage6/algorithm/kaplan-meier"
+  "image": "ghcr.io/vantage6/algorithm/kaplan-meier:4"
 }
