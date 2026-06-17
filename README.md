@@ -14,7 +14,11 @@
 
 This repository contains an implementation of the Kaplan-Meier curve calculation designed for federated learning environments via the [vantage6](https://vantage6.ai) framework. It allows for the estimation of survival probabilities across distributed datasets without sharing the patient-specific information. This method supports privacy-enhancing data analysis in medical research and other fields where event-time analysis is critical.
 
-*TODO: Add a link to the documentation.*
+The documentation is hosted [here](https://algorithms.vantage6.ai/en/latest/v6-kaplan-meier-py/docs/index.html).
+
+## Running the algorithm
+
+Data is no longer loaded automatically inside compute functions. In a session, run a **data extraction** step first (for example `read_csv` from [v6-extract-basics-py](https://github.com/vantage6/v6-extract-basics-py)), then run **`kaplan_meier_central`** with `time_column_name` and `censor_column_name`. At least three organizations must participate by default.
 
 ## Acknowledgements
 The initial idea was based on contributions from Benedetta Gottardelli [benedetta.gottardelli@unicatt.it](mailto:benedetta.gottardelli@unicatt.it). It was further developed by [Medical Data Works](https://github.com/mdw-nl/v6-km-studyathon) and finally adapated by the members of the [BlueBerry](https://euracan.eu/registries/blueberry/) project.

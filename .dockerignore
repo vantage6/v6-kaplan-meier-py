@@ -5,8 +5,6 @@ __pycache__
 .vscode
 .pytest_cache
 
-utils/
+test/
 
 *.pyc
-
-v6-kaplan-meier-py/local

@@ -3,11 +3,13 @@ import pandas as pd
 import numpy as np
 
 from typing import List
-from vantage6.algorithm.tools.util import get_env_var, info, warn, error
-from vantage6.algorithm.tools.decorators import data
+from vantage6.common import info, warning
+from vantage6.algorithm.tools.util import get_env_var
+from vantage6.algorithm.decorator.action import federated
+from vantage6.algorithm.decorator.data import dataframe
 from vantage6.algorithm.tools.exceptions import InputError, EnvironmentVariableError
 
-from .utils import get_env_var_as_int, get_env_var_as_list, get_env_var_as_float
+from .utils import get_env_var_as_list, get_env_var_as_float
 from .globals import (
     KAPLAN_MEIER_MINIMUM_NUMBER_OF_RECORDS,
     KAPLAN_MEIER_ALLOWED_EVENT_TIME_COLUMNS_REGEX,
@@ -17,7 +19,8 @@ from .globals import (
 from .enums import NoiseType
 
 
-@data(1)
+@federated
+@dataframe(1)
 def get_unique_event_times(df: pd.DataFrame, time_column_name: str) -> List[str]:
     """
     Get unique event times from a DataFrame.
@@ -49,7 +52,8 @@ def get_unique_event_times(df: pd.DataFrame, time_column_name: str) -> List[str]
     return df[time_column_name].unique().tolist()
 
 
-@data(1)
+@federated
+@dataframe(1)
 def get_km_event_table(
     df: pd.DataFrame,
     time_column_name: str,
@@ -112,8 +116,10 @@ def _privacy_gaurds(df: pd.DataFrame, time_column_name: str) -> pd.DataFrame:
     """
 
     info("Checking number of records in the DataFrame.")
-    MINIMUM_NUMBER_OF_RECORDS = get_env_var_as_int(
-        "KAPLAN_MEIER_MINIMUM_NUMBER_OF_RECORDS", KAPLAN_MEIER_MINIMUM_NUMBER_OF_RECORDS
+    MINIMUM_NUMBER_OF_RECORDS = get_env_var(
+        "KAPLAN_MEIER_MINIMUM_NUMBER_OF_RECORDS",
+        KAPLAN_MEIER_MINIMUM_NUMBER_OF_RECORDS,
+        as_type="int",
     )
     if len(df) <= MINIMUM_NUMBER_OF_RECORDS:
         raise InputError(
@@ -123,7 +129,8 @@ def _privacy_gaurds(df: pd.DataFrame, time_column_name: str) -> pd.DataFrame:
 
     info("Check that the selected time column is allowed by the node")
     ALLOWED_EVENT_TIME_COLUMNS_REGEX = get_env_var_as_list(
-        "KAPLAN_MEIER_EVENT_TIME_COLUMN", KAPLAN_MEIER_ALLOWED_EVENT_TIME_COLUMNS_REGEX
+        "KAPLAN_MEIER_ALLOWED_EVENT_TIME_COLUMNS_REGEX",
+        KAPLAN_MEIER_ALLOWED_EVENT_TIME_COLUMNS_REGEX,
     )
     for pattern in ALLOWED_EVENT_TIME_COLUMNS_REGEX:
         if re.match(pattern, time_column_name):
@@ -243,9 +250,9 @@ def __fix_random_seed():
     # we need to add the same noise to the event times for every run. Else the party
     # can simply run the algorithm multiple times and average the results to get the
     # original event times.
-    random_seed = get_env_var_as_int("KAPLAN_MEIER_RANDOM_SEED", "0")
+    random_seed = get_env_var("KAPLAN_MEIER_RANDOM_SEED", "0", as_type="int")
     if random_seed == 0:
-        warn(
+        warning(
             "Random seed is set to 0, this is not safe and should only be done for "
             "testing."
         )

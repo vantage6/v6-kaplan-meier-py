@@ -1,17 +1,14 @@
 Validation
 ==========
 
-A `validation script <https://github.com/vantage6/v6-kaplan-meier-py>`_ is available in
-the `tests` directory. It can be run with the following command:
+A `test script <https://github.com/vantage6/v6-kaplan-meier-py/blob/main/test/test.py>`_ is
+available in the ``test`` directory. Install dev dependencies and run pytest:
 
 .. code-block:: bash
 
-  python tests/validate_1.py
+    uv sync --group dev
+    uv run pytest test/test.py -v
 
-It will plot the Kaplan-Meier curve for a federated dataset and compare it with the
-centralized Kaplan-Meier curve. The following figure shows the comparison of the two
-curves:
-
-.. figure:: ../_static/validate.png
-
-  Comparison of the federated Kaplan-Meier curve with the centralized Kaplan-Meier curve.
+The tests use the vantage6 ``MockNetwork`` with three data stations and compare the
+federated Kaplan-Meier curve against a centralized ``lifelines`` reference (with noise
+disabled).

@@ -1,16 +1,18 @@
 {
   "name": "Kaplan-Meier",
+  "image": "ghcr.io/vantage6/algorithm/kaplan-meier",
+  "vantage6_version": "5.0.0",
+  "code_url": "https://github.com/vantage6/v6-kaplan-meier-py.git",
+  "documentation_url": "https://algorithms.vantage6.ai/en/latest/v6-kaplan-meier-py/docs/index.html",
   "partitioning": "horizontal",
-  "vantage6_version": "4.5",
+  "description": "Compute a Kaplan-Meier curves.",
   "functions": [
     {
       "name": "kaplan_meier_central",
-      "databases": [
-        {
-          "name": "Database",
-          "description": "Database to use for the Kaplan-Meier curve"
-        }
-      ],
+      "display_name": "Kaplan-Meier",
+      "standalone": true,
+      "description": "Compute a Kaplan-Meier curves for a cohort of patients.",
+      "step_type": "central_compute",
       "ui_visualizations": [
         {
           "name": "Survival time table",
@@ -33,25 +35,101 @@
       ],
       "arguments": [
         {
-          "type": "string",
+          "name": "time_column_name",
+          "display_name": "Time column",
           "description": "The column name of the time variable.",
-          "name": "time_column_name"
+          "type": "column",
+          "has_default_value": false,
+          "is_frontend_only": false
         },
         {
-          "type": "string",
+          "name": "censor_column_name",
+          "display_name": "Censor column",
           "description": "The column name of the censor.",
-          "name": "censor_column_name"
+          "type": "column",
+          "has_default_value": false,
+          "is_frontend_only": false
         },
         {
-          "type": "organization_list",
+          "name": "organizations_to_include",
+          "display_name": "Organizations to include",
           "description": "List of organizations to include in the analysis.",
-          "name": "organizations_to_include"
+          "type": "organization_list",
+          "has_default_value": true,
+          "is_frontend_only": false,
+          "default_value": null
         }
       ],
-      "description": "Compute a Kaplan-Meier curves for a cohort of patients.",
-      "type": "central"
+      "databases": [
+        {
+          "name": "Database",
+          "description": "Database to use for the Kaplan-Meier curve"
+        }
+      ]
+    },
+    {
+      "name": "get_unique_event_times",
+      "display_name": "Unique event times per data station",
+      "standalone": true,
+      "description": "Collect unique event times from a single data station.",
+      "step_type": "federated_compute",
+      "ui_visualizations": [],
+      "arguments": [
+        {
+          "name": "time_column_name",
+          "display_name": "Time column",
+          "description": "The column name of the time variable.",
+          "type": "column",
+          "has_default_value": false,
+          "is_frontend_only": false
+        }
+      ],
+      "databases": [
+        {
+          "name": "Database",
+          "description": "Database to use for the Kaplan-Meier curve"
+        }
+      ]
+    },
+    {
+      "name": "get_km_event_table",
+      "display_name": "Kaplan-Meier event table per data station",
+      "standalone": true,
+      "description": "Compute local Kaplan-Meier event table for a single data station.",
+      "step_type": "federated_compute",
+      "ui_visualizations": [],
+      "arguments": [
+        {
+          "name": "time_column_name",
+          "display_name": "Time column",
+          "description": "The column name of the time variable.",
+          "type": "column",
+          "has_default_value": false,
+          "is_frontend_only": false
+        },
+        {
+          "name": "censor_column_name",
+          "display_name": "Censor column",
+          "description": "The column name of the censor.",
+          "type": "column",
+          "has_default_value": false,
+          "is_frontend_only": false
+        },
+        {
+          "name": "unique_event_times",
+          "display_name": "Unique event times",
+          "description": "Global unique event times aggregated by the central step.",
+          "type": "float_list",
+          "has_default_value": false,
+          "is_frontend_only": false
+        }
+      ],
+      "databases": [
+        {
+          "name": "Database",
+          "description": "Database to use for the Kaplan-Meier curve"
+        }
+      ]
     }
-  ],
-  "description": "Compute a Kaplan-Meier curves.",
-  "image": "ghcr.io/vantage6/algorithm/kaplan-meier:4"
+  ]
 }
