@@ -8,7 +8,7 @@ encryption if that is enabled).
 
 import pandas as pd
 
-from typing import List, Union, Dict
+from typing import List
 from vantage6.algorithm.tools.util import get_env_var
 from vantage6.common import info
 from vantage6.algorithm.client import AlgorithmClient
@@ -26,7 +26,7 @@ def kaplan_meier_central(
     time_column_name: str,
     censor_column_name: str,
     organizations_to_include: List[int] | None = None,
-) -> str:
+) -> dict:
     """
     Central part of the Federated Kaplan-Meier curve computation.
 
@@ -91,7 +91,7 @@ def kaplan_meier_central(
         censor_column_name=censor_column_name,
     )
     local_event_tables = [
-        pd.read_json(event_table) for event_table in local_km_per_node
+        pd.DataFrame(event_table) for event_table in local_km_per_node
     ]
 
     info("Aggregating event tables")
@@ -100,12 +100,12 @@ def kaplan_meier_central(
     km["survival_cdf"] = (1 - km["hazard"]).cumprod()
 
     info("Kaplan-Meier curve computed")
-    return km.to_json()
+    return km.to_dict()
 
 
 def _start_partial_and_collect_results(
-    client: AlgorithmClient, method: str, organizations_to_include: List[int], **kwargs
-) -> List[Dict[str, Union[str, List[str]]]]:
+    client: AlgorithmClient, method: str, organizations_to_include: list[int], **kwargs
+) -> list[dict]:
     """
     Launches a partial task to multiple organizations and collects their results when
     ready.

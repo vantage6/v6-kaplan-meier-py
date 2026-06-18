@@ -6,7 +6,6 @@ Run pytest to test the Kaplan-Meier algorithm locally using MockNetwork.
 """
 
 import os
-from io import StringIO
 from pathlib import Path
 
 import pandas as pd
@@ -51,11 +50,8 @@ KM_ARGS = {
 
 
 def _central_result(results):
-    """Parse the JSON string returned by kaplan_meier_central."""
-    payload = results[0]
-    if isinstance(payload, str):
-        return pd.read_json(StringIO(payload))
-    return pd.read_json(StringIO(payload))
+    """Parse the result returned by kaplan_meier_central."""
+    return pd.DataFrame(results[0])
 
 
 def _reference_survival() -> pd.Series:
@@ -119,7 +115,7 @@ def test_partial_km_event_table():
     )
     results = client.wait_for_results(task.get("id"))
 
-    event_table = pd.read_json(StringIO(results[0]))
+    event_table = pd.DataFrame(results[0])
     for column in (TIME_COLUMN, "observed", "removed", "censored", "at_risk"):
         assert column in event_table.columns
     assert len(event_table) == len(unique_times)

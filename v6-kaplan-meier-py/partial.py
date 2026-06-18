@@ -59,7 +59,7 @@ def get_km_event_table(
     time_column_name: str,
     censor_column_name: str,
     unique_event_times: List[int | float],
-) -> str:
+) -> dict:
     """
     Calculate death counts, total counts, and at-risk counts at each unique event time.
 
@@ -77,7 +77,7 @@ def get_km_event_table(
     Returns
     -------
     str
-        The Kaplan-Meier event table as a JSON string.
+        The Kaplan-Meier event table as a column-oriented dictionary.
     """
     info("Checking privacy guards.")
     _privacy_gaurds(df, time_column_name)
@@ -106,8 +106,7 @@ def get_km_event_table(
     # Calculate "at-risk" counts at each unique event time
     km_df["at_risk"] = km_df["removed"].iloc[::-1].cumsum().iloc[::-1]
 
-    # Convert DataFrame to JSON
-    return km_df.to_json()
+    return km_df.to_dict()
 
 
 def _privacy_gaurds(df: pd.DataFrame, time_column_name: str) -> pd.DataFrame:
