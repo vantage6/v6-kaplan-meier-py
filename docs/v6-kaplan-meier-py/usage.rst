@@ -27,6 +27,13 @@ Input arguments
       - ``List`` of ``Int``
       - The IDs of the organizations that should be included in the computation
 
+Session workflow
+----------------
+
+Ensure that you have loaded the data into a dataframe in a session. To do so, run a
+**data extraction** step first (for example ``read_csv`` from
+`v6-extract-basics-py <https://github.com/vantage6/v6-extract-basics-py>`_). Data
+extraction functions are not included in this algorithm.
 
 Python client example
 ---------------------
@@ -56,23 +63,22 @@ first, especially the part about the
   collaboration_id = 1  # or check your collaborations with client.collaboration.list()
   org_ids = [org['id'] for org in client.organization.list(collaboration=collaboration_id)]
 
-  input_ = {
-    'method': 'kaplan_meier_central',
-    'args': [],
-    'kwargs': {
-        "time_column_name": "TIME_AT_RISK",
-        "censor_column_name": "MORTALITY_FLAG",
-        "organizations_to_include": org_ids
-    }
-  }
-
   my_task = client.task.create(
-      collaboration=1,
-      organizations=org_ids[0],
+      collaboration=collaboration_id,
+      organizations=[org_ids[0]],
       name='v6-kaplan-meier-py',
       description='Federated Kaplan Meier from Python Client',
-      image='ghcr.io/vantage6/algorithm/kaplan-meier',
-      input=input_,
+      image='ghcr.io/vantage6/algorithm/kaplan-meier:latest',
+      method='kaplan_meier_central',
+      arguments={
+          "time_column_name": "TIME_AT_RISK",
+          "censor_column_name": "MORTALITY_FLAG",
+          "organizations_to_include": org_ids,
+      },
+      session=1,  # replace with your session id
+      databases=[
+          {'type': 'dataframe', 'dataframe_id': 1},
+      ],
   )
 
   task_id = my_task.get('id')

@@ -1,5 +1,4 @@
-ARG BASE=4.15
-ARG TAG=latest
+ARG BASE=5.0
 FROM ghcr.io/vantage6/infrastructure/algorithm-base:${BASE}
 
 # Change this to the package name of your project. This needs to be the same
@@ -8,13 +7,15 @@ ARG PKG_NAME="v6-kaplan-meier-py"
 
 LABEL maintainer="F.C. Martin <f.martin@iknl.nl>"
 LABEL maintainer="A.J. van Gestel <a.vangestel@iknl.nl>"
+LABEL maintainer="B. van Beusekom <b.vanbeusekom@iknl.nl>"
 
 # This will install your algorithm into this image.
 COPY . /app
-RUN pip install /app
+RUN uv pip install --system -e /app
 
 # This will run your algorithm when the Docker container is started. The
 # wrapper takes care of the IO handling (communication between node and
 # algorithm). You dont need to change anything here.
 ENV PKG_NAME=${PKG_NAME}
+
 CMD python -c "from vantage6.algorithm.tools.wrap import wrap_algorithm; wrap_algorithm()"

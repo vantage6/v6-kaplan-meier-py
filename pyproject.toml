@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "v6-kaplan-meier-py"
+version = "1.2.0"
+description = "vantage6 Kaplan-Meier curve"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "numpy",
+  "pandas",
+  "vantage6-algorithm-tools>=5.0.1",
+]
+authors = [
+  { name = "Benedetta Gottardelli", email = "benedetta.gottardelli@unicatt.it" },
+  { name = "Aiara Lobo Gomes", email = "aiara.lobogomes@maastro.nl" },
+  { name = "Ivan Zhovannik", email = "ivan.zhovannik@medicaldataworks.nl" },
+  { name = "Luis Sanchez Gomez", email = "luis.sanchezgomez@medicaldataworks.nl" },
+  { name = "Frank Martin", email = "f.martin@iknl.nl" },
+  { name = "A.J. van Gestel", email = "a.vangestel@iknl.nl" },
+  { name = "Bart van Beusekom", email = "b.vanbeusekom@iknl.nl" },
+]
+license = { text = "MIT" }
+keywords = ["vantage6", "algorithm", "federated-learning"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Homepage = "https://github.com/vantage6/v6-kaplan-meier-py"
+Repository = "https://github.com/vantage6/v6-kaplan-meier-py"
+Issues = "https://github.com/vantage6/v6-kaplan-meier-py/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["v6-kaplan-meier-py"]
+
+[dependency-groups]
+dev = [
+  "lifelines>=0.29.0",
+  "pytest",
+]

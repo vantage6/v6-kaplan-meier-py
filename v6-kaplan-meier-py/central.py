@@ -8,23 +8,25 @@ encryption if that is enabled).
 
 import pandas as pd
 
-from typing import Dict, List, Union
+from typing import List
+from vantage6.algorithm.tools.util import get_env_var
+from vantage6.common import info
 from vantage6.algorithm.client import AlgorithmClient
-from vantage6.algorithm.tools.util import info, error
-from vantage6.algorithm.tools.decorators import algorithm_client
+from vantage6.algorithm.decorator.algorithm_client import algorithm_client
+from vantage6.algorithm.decorator.action import central
 from vantage6.algorithm.tools.exceptions import PrivacyThresholdViolation
 
 from .globals import KAPLAN_MEIER_MINIMUM_ORGANIZATIONS
-from .utils import get_env_var_as_int
 
 
+@central
 @algorithm_client
 def kaplan_meier_central(
     client: AlgorithmClient,
     time_column_name: str,
     censor_column_name: str,
     organizations_to_include: List[int] | None = None,
-) -> Dict[str, Union[str, List[str]]]:
+) -> dict:
     """
     Central part of the Federated Kaplan-Meier curve computation.
 
@@ -55,8 +57,10 @@ def kaplan_meier_central(
             organization.get("id") for organization in client.organization.list()
         ]
 
-    MINIMUM_ORGANIZATIONS = get_env_var_as_int(
-        "KAPLAN_MEIER_MINIMUM_ORGANIZATIONS", KAPLAN_MEIER_MINIMUM_ORGANIZATIONS
+    MINIMUM_ORGANIZATIONS = get_env_var(
+        "KAPLAN_MEIER_MINIMUM_ORGANIZATIONS",
+        KAPLAN_MEIER_MINIMUM_ORGANIZATIONS,
+        as_type="int",
     )
     if len(organizations_to_include) < MINIMUM_ORGANIZATIONS:
         raise PrivacyThresholdViolation(
@@ -87,7 +91,7 @@ def kaplan_meier_central(
         censor_column_name=censor_column_name,
     )
     local_event_tables = [
-        pd.read_json(event_table) for event_table in local_km_per_node
+        pd.DataFrame(event_table) for event_table in local_km_per_node
     ]
 
     info("Aggregating event tables")
@@ -96,12 +100,12 @@ def kaplan_meier_central(
     km["survival_cdf"] = (1 - km["hazard"]).cumprod()
 
     info("Kaplan-Meier curve computed")
-    return km.to_json()
+    return km.to_dict()
 
 
 def _start_partial_and_collect_results(
-    client: AlgorithmClient, method: str, organizations_to_include: List[int], **kwargs
-) -> List[Dict[str, Union[str, List[str]]]]:
+    client: AlgorithmClient, method: str, organizations_to_include: list[int], **kwargs
+) -> list[dict]:
     """
     Launches a partial task to multiple organizations and collects their results when
     ready.
@@ -124,8 +128,11 @@ def _start_partial_and_collect_results(
     """
     info(f"Including {len(organizations_to_include)} organizations in the analysis")
     task = client.task.create(
-        input_={"method": method, "kwargs": kwargs},
+        method=method,
+        arguments=kwargs,
         organizations=organizations_to_include,
+        name=f"Kaplan-Meier {method}",
+        description=f"Run {method} per data station",
     )
 
     info("Waiting for results")
