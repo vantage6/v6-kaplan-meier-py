@@ -99,6 +99,13 @@ def kaplan_meier_central(
     km["hazard"] = km["observed"] / km["at_risk"]
     km["survival_cdf"] = (1 - km["hazard"]).cumprod()
 
+    # copy time column to duplicate column 'time' to allow display of algorithm in
+    # the vantage6 UI
+    # This may be removed when https://github.com/vantage6/vantage6/issues/1336 is
+    # implemented
+    if "time" not in km.columns:
+        km["time"] = km[time_column_name]
+
     info("Kaplan-Meier curve computed")
     return km.to_dict()
 
