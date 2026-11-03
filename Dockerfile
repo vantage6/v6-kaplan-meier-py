@@ -1,4 +1,4 @@
-ARG BASE=5.0
+ARG BASE=5
 FROM ghcr.io/vantage6/infrastructure/algorithm-base:${BASE}
 
 # Change this to the package name of your project. This needs to be the same
